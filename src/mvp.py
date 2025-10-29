@@ -5,6 +5,10 @@ import re
 from numpy import dot
 from numpy.linalg import norm
 from sklearn.feature_extraction.text import CountVectorizer
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+DATA_PATH = BASE_DIR.parent / "data" / "data.txt"
 
 data = []
 
@@ -14,7 +18,7 @@ def read_data():
     """
     print("Reading data...\n")
 
-    with open("data.txt", encoding="utf8") as f:
+    with DATA_PATH.open(encoding="utf8") as f:
         line = f.readline()
 
         while line:
@@ -67,11 +71,6 @@ def generate_response(prompt):
     return result
 
 
-def run_tests():
-    assert sentence_to_list("This is a test") == ["This", "is", "a", "test"], "Converting sentences to lists failed!"
-    assert list_to_sentence(["This", "is", "a", "test"]) == "This is a test", "Converting lists to sentences failed!"
-    print("Tests passed.\n")
-
 # main
 if __name__ == '__main__':
 
@@ -79,14 +78,12 @@ if __name__ == '__main__':
 
     run_training()
 
-    request = int(input("Type in 1 to run tests. \nType in 2 to run the evaluation. \nType in 3 to make a prompt.\n"))
+    request = int(input("Type in 1 to run the evaluation. \nType in 2 to make a prompt.\n"))
 
     match request:
         case 1:
-            run_tests()
-        case 2:
             run_evaluation()
-        case 3:
+        case 2:
             prompt = input("Requesting prompt...\n")
             print(generate_response(prompt) + "\n")
             print("Response generated.\n")
