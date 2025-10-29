@@ -1,6 +1,7 @@
 # FilmCriticLM
 
 Implementation for the Master Project _Efficient Methods in Machine Learning_ 2025/26
+
 The TruFiTi Group (Trung, Finn, Till)
 
 ---
@@ -33,7 +34,7 @@ Generate a review from a summary and bullet points for content.
 
 ## Usage
 
-> _(To be updated)_
+_(To be updated)_
 
 ---
 
