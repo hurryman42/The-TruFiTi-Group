@@ -14,21 +14,19 @@ FilmCriticLM is a language model-based system developed to automatically generat
 
 ## Features & Development Stages
 
-Stage 1.0:
-Generate a film review from a plot summary only.
+<u>Level 1:</u> Just generate a film review.
 - Input: Film summary
-- Output: Automated review assessing the film based only on its summary
+- Output: A text that sounds like a review / could be a review to any film. (input is basically ignored)
 
-Stage 2.1:
-Generate a review suited to a provided film summary and specific rating.
-- Input: Film summary + user-specified rating
-- Output: Coherent review matching both the film content and the desired rating
+<u>Level 2: </u> Generate a review based on the given summary.
+- Input: Film summary
+- Output: Coherent review that fits the film content.
 
-Stage 2.2:
-Generate a review from a summary and bullet points for content.
+<u>Level 3:</u> Generate a review from a summary and bullet points for content.
 - Input: Film summary + bullet points (key aspects of review)
-- Output: Fully formulated review, elaborating on the given bullet points
-- _Use case:_ Quick creation of readable, high-quality reviews—helpful when in a rush or when struggling to articulate thoughts
+- Output: Fully formulated review that fits the film content and elaborates on the given bullet points.
+
+<u>Use case:</u> Quick creation of readable, high-quality film reviews - helpful when in a rush or when struggling to articulate thoughts
 
 ---
 
@@ -46,12 +44,6 @@ _(To be updated)_
 
 University of Hamburg
 Master Project: Efficient Methods in Machine Learning (2025/26)
-
----
-
-## License
-
-_(To be specified)_
 
 ---
 
