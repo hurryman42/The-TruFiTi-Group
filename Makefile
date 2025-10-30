@@ -7,7 +7,7 @@ SRC_FILE := src/data-filter.py
 DOWNLOAD_URL := https://huggingface.co/datasets/pkchwy/letterboxd-all-movie-data/resolve/main/full_dump.jsonl
 
 # default target
-all: check-deps $(DATA_FILE) run-filter
+all: check-deps $(DATA_FILE) run-filter clean
 
 # check for required dependencies
 check-deps:

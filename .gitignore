@@ -1,5 +1,4 @@
 .idea/
 .venv/
 __pycache__/
-/data/letterboxd_full.jsonl
-/data/letterboxd_filtered.jsonl
+*.jsonl
