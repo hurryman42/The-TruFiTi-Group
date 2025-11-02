@@ -1,8 +1,8 @@
-# downloads Letterboxd dataset & runs data-filter.py on it
+# downloads Letterboxd dataset & runs data_filter.py on it
 
 DATA_DIR := data
 DATA_FILE := $(DATA_DIR)/letterboxd_full.jsonl
-SRC_FILE := src/data-filter.py
+SRC_FILE := src/data/data_filter.py
 DOWNLOAD_URL := https://huggingface.co/datasets/pkchwy/letterboxd-all-movie-data/resolve/main/full_dump.jsonl
 
 data: check-deps download-data verify-download run-filter-review clean
