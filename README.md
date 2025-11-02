@@ -30,9 +30,29 @@ FilmCriticLM is a language model-based system developed to automatically generat
 
 ---
 
-## Usage
+## Setup and Usage
 
-_(To be updated)_
+This project uses a `Makefile` to automate downloading the Letterboxd full dump and running the data filter script.
+
+### Prerequisites
+- Linux or macOS:
+  - curl (installed by default on most systems)
+  - Python 3 (python3 command)
+  - make utility (installed by default on most UNIX-like OSes)
+- Windows:
+  - use WSL, Git Bash, or another UNIX-like terminal with `make`, `curl`, and `python3`
+  - alternatively, see scripts under the `windows/` folder (if provided)
+
+### Download data and run filter
+run `make`
+
+This will:
+1. Check if `curl` and `python3` are installed.
+2. Download the data file into `data/letterboxd_full.jsonl`.
+3. Run `src/data-filter.py`.
+
+### Troubleshooting
+If you see errors about `curl` or `python3` missing, please install them using your package manager (e.g., `sudo apt install curl python3` on Ubuntu, or `brew install curl python` on macOS with Homebrew).
 
 ---
 
