@@ -27,7 +27,7 @@ def filter_per_review(data): # each review has its own entry with its film metad
 
 def main():
     if len(sys.argv) < 3:
-        print("usage: python data-filter.py <mode> <input_file>")
+        print("usage: python data_filter.py <mode> <input_file>")
         print("  mode = 'film' for one entry per film")
         print("  mode = 'review' for one entry per review")
         sys.exit(1)
