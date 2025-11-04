@@ -43,3 +43,5 @@ clean:
 
 .PHONY: all check-deps run-filter clean
 
+test:
+	poetry run pytest
