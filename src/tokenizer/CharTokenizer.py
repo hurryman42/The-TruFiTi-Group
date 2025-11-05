@@ -1,7 +1,11 @@
 import json
 
-class CharTokenizer:
+from src.tokenizer.AbstractTokenizer import AbstractTokenizer
+
+
+class CharTokenizer(AbstractTokenizer):
     def __init__(self):
+        super().__init__()
         self._chars = []
         self._char_to_token = dict()
         self._token_to_char = dict()
