@@ -1,10 +1,6 @@
 # MVP for FilmCriticLM
 
 import random
-import re
-from numpy import dot
-from numpy.linalg import norm
-from sklearn.feature_extraction.text import CountVectorizer
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent

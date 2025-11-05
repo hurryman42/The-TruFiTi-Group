@@ -1,7 +1,7 @@
-import sys
-import os
-import json
 import argparse
+import json
+import os
+import sys
 
 DEFAULT_MIN_SYNOPSIS_WORDS = 0
 
