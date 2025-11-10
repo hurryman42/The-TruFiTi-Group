@@ -7,7 +7,7 @@ DOWNLOAD_URL := https://huggingface.co/datasets/pkchwy/letterboxd-all-movie-data
 
 MIN_SYNOPSIS_WORDS ?= 10
 
-data: check-deps download-data verify-download run-filter-review clean
+data: check-deps download-data verify-download run-filter-film clean
 
 data-no-filter: MIN_SYNOPSIS_WORDS=0
 data-no-filter: data
