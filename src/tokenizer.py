@@ -10,6 +10,12 @@ def return_base_vocabulary():
 def word_to_bytes(word):
     return bytes(word, "utf-8")
 
+def is_prefix_of(list1, list2):
+    if len(list1) <= len(list2):
+        return list2[:len(list1)] == list1
+    else:
+        return False
+
 def byte_pair_encode(sentence):
     vocab = return_base_vocabulary()
     counter = {}
@@ -42,4 +48,4 @@ def byte_pair_encode(sentence):
 
 if __name__ == '__main__':
     print(byte_pair_encode("the cat in the hat"))
-    #print(word_to_bytes("baa"))
+    print(is_prefix_of(bytes("aab", "utf-8"), bytes("aabbba", "utf-8")))
