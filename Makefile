@@ -6,10 +6,14 @@ SRC_FILE := src/data/data_filter.py
 DOWNLOAD_URL := https://huggingface.co/datasets/pkchwy/letterboxd-all-movie-data/resolve/main/full_dump.jsonl
 
 MIN_SYNOPSIS_WORDS ?= 10
+MAX_EMOJIS ?= 5
+MAX_NON_LATIN_CHARS ?= 20
 
-data: check-deps download-data verify-download run-filter-review clean
+data: check-deps download-data verify-download run-filter-film clean
 
 data-no-filter: MIN_SYNOPSIS_WORDS=0
+data-no-filter: MAX_EMOJIS=9999
+data-no-filter: MAX_NON_LATIN_CHARS=99999
 data-no-filter: data
 
 check-deps:
@@ -32,8 +36,11 @@ verify-download:
 	fi
 
 run-filter-%: $(SRC_FILE)
-	@echo "Running data filter in '$*' mode (min synopsis words: $(MIN_SYNOPSIS_WORDS))..."
-	@poetry run python $(SRC_FILE) $* $(DATA_FILE) --min-synopsis-words $(MIN_SYNOPSIS_WORDS)
+	@echo "Running data filter in '$*' mode..."
+	@echo "  min synopsis words: $(MIN_SYNOPSIS_WORDS)"
+	@echo "  max emojis: $(MAX_EMOJIS)"
+	@echo "  max non-Latin chars: $(MAX_NON_LATIN_CHARS)"
+	@poetry run python $(SRC_FILE) $* $(DATA_FILE) --min-synopsis-words $(MIN_SYNOPSIS_WORDS) --max-emojis $(MAX_EMOJIS) --max-non-latin-chars $(MAX_NON_LATIN_CHARS)
 	@echo "\033[0;32mData filter ($*) completed successfully.\033[0m"
 
 clean:
