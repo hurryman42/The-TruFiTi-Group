@@ -1,5 +1,9 @@
+import sys
 
 def return_base_vocabulary():
+    """
+    Returns a dictionary that is the basis for a vocabularies used to encode Strings.
+    """
     result = {}
 
     for i in range(256):
@@ -7,45 +11,81 @@ def return_base_vocabulary():
 
     return result.copy()
 
-def word_to_bytes(word):
-    return bytes(word, "utf-8")
-
 def is_prefix_of(list1, list2):
+    """
+    Returns True if list1 is a prefix of list2.
+    """
     if len(list1) <= len(list2):
         return list2[:len(list1)] == list1
     else:
         return False
 
-def byte_pair_encode(sentence):
-    vocab = return_base_vocabulary()
-    counter = {}
+def encode_with_vocabulary(input, vocab):
+    """
+    Encodes a given input with the given vocabulary and returns it as a vector.
+    """
+    result = []
 
-    words = sentence.strip().split(" ")
-    for word in words:
-        for i in range(len(word)-1):
-            bytepair = bytes(word[i], "utf-8") + bytes(word[i+1], "utf-8")
-            if bytepair in counter:
-                counter[bytepair] += 1
-            else:
-                counter[bytepair] = 1
-
-    new_bytepair = max(counter, key=counter.get)
-    vocab[len(vocab)] = max(counter, key=counter.get)
-
-    new_sentence = ""
     i = 0
-    while i < len(sentence)-1:
-        bytepair = bytes(sentence[i], "utf-8") + bytes(sentence[i+1], "utf-8")
-        if bytepair == new_bytepair:
-            new_sentence += "<256>"
-            i += 2
-        else:
-            new_sentence += sentence[i]
-            i += 1
-    new_sentence += sentence[len(sentence)-1]
+    while i < len(input):
+        temp = -1
+        temp_len = 0
+        for key, value in vocab.items():
+            if is_prefix_of(value, bytes(input[i:], "utf-8")) and (key > temp):
+                temp = key
+                temp_len = len(value)
+        result.append(temp)
+        i += temp_len
 
-    return new_sentence
+    return result.copy()
+
+def decode_with_vocabulary(input, vocab):
+    """
+    Decodes a given input with the given vocabulary and returns it as a string.
+    """
+    result = bytes("", "utf-8")
+
+    for element in input:
+        result += vocab[element]
+
+    return result.decode("utf-8")
+
+def byte_pair_encode(sentences, vocab_size=256):
+    """
+    Returns a vocabulary that is the result of the byte-level byte pair encoding algorithm.
+    """
+    assert vocab_size >= 256, "Vocabulary size must be at least 256."
+
+    vocab = return_base_vocabulary()
+
+    for i in range(vocab_size - 256):
+        counter = {}
+
+        for sentence in sentences:
+            words = sentence.strip().split(" ")
+
+            for word in words:
+                encoded_word = encode_with_vocabulary(word, vocab)
+                for i in range(len(encoded_word)-1):
+                    pair = str(encoded_word[i]) + "-" + str(encoded_word[i+1]) #necessary because lists are not hashable in Python
+                    if pair in counter:
+                        counter[pair] += 1
+                    else:
+                        counter[pair] = 1
+
+        dominant = max(counter, key=counter.get)
+        dominant_pair = dominant.split("-")
+
+        byte_pair = vocab[int(dominant_pair[0])] + vocab[int(dominant_pair[1])]
+
+        vocab[len(vocab)] = byte_pair
+
+    return vocab.copy()
 
 if __name__ == '__main__':
-    print(byte_pair_encode("the cat in the hat"))
-    print(is_prefix_of(bytes("aab", "utf-8"), bytes("aabbba", "utf-8")))
+    print("Input Sentence: the cat in the hat likes the hat")
+    test_vocab = byte_pair_encode(["the cat in the hat likes the hat"], 260)
+    print("Byte-Level BPE vocabulary:", test_vocab)
+    test_encode = encode_with_vocabulary("the cat in the hat likes the hat", test_vocab)
+    print("Encoded vector: ", test_encode)
+    print("Decoded string: ", decode_with_vocabulary(test_encode, test_vocab))
