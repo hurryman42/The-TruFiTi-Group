@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Optional
 
 
 class AbstractTokenizer(ABC):
     def __init__(self):
-        self.vocab_size: Optional[int] = None
+        pass
 
     @abstractmethod
     def encode(self, text: str) -> list[int]:
@@ -28,7 +27,7 @@ class AbstractTokenizer(ABC):
     def load(cls, path: str) -> 'AbstractTokenizer':
         pass
 
-    def __len__(self) -> int:
-        if self.vocab_size is None:
-            raise ValueError("Tokenizer not trained yet")
-        return self.vocab_size
+    @property
+    @abstractmethod
+    def get_vocab_size(self) -> int:
+        pass

@@ -1,6 +1,6 @@
 import json
 
-from src.tokenizer.AbstractTokenizer import AbstractTokenizer
+from src.tokenizer.abstract_tokenizer import AbstractTokenizer
 
 
 class CharTokenizer(AbstractTokenizer):
@@ -45,3 +45,7 @@ class CharTokenizer(AbstractTokenizer):
             tokenizer._char_to_token = data['char_to_token']
             tokenizer._token_to_char = {int(k): v for k, v in data['token_to_char'].items()}
         return tokenizer
+
+    @property
+    def get_vocab_size(self) -> int:
+        return len(self._chars)

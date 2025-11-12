@@ -1,6 +1,6 @@
 import pytest
 
-from src.tokenizer.CharTokenizer import CharTokenizer
+from src.tokenizer.char_tokenizer import CharTokenizer
 
 @pytest.fixture
 def tokenizer():

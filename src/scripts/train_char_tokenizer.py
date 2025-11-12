@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from src.tokenizer.CharTokenizer import CharTokenizer
+from src.tokenizer.char_tokenizer import CharTokenizer
 
 
 def read_file(file_path) -> list[str]:
