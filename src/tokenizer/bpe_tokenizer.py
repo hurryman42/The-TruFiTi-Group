@@ -1,4 +1,4 @@
-from src.tokenizer.AbstractTokenizer import AbstractTokenizer
+from src.tokenizer.abstract_tokenizer import AbstractTokenizer
 
 
 class BPETokenizer(AbstractTokenizer):
