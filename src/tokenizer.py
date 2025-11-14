@@ -83,9 +83,15 @@ def byte_pair_encode(sentences, vocab_size=256):
     return vocab.copy()
 
 if __name__ == '__main__':
-    print("Input Sentence: the cat in the hat likes the hat")
-    test_vocab = byte_pair_encode(["the cat in the hat likes the hat"], 260)
+
+    example_sentence = "the cat hat"
+    print(encode_with_vocabulary(example_sentence, return_base_vocabulary()))
+
+    print(b'h'.hex())
+
+    print("Input Sentence:", example_sentence)
+    test_vocab = byte_pair_encode([example_sentence], 257)
     print("Byte-Level BPE vocabulary:", test_vocab)
-    test_encode = encode_with_vocabulary("the cat in the hat likes the hat", test_vocab)
+    test_encode = encode_with_vocabulary(example_sentence, test_vocab)
     print("Encoded vector: ", test_encode)
     print("Decoded string: ", decode_with_vocabulary(test_encode, test_vocab))
