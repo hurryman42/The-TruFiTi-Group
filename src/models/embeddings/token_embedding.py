@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class TokenEmbedding(nn.Module):
-    def __init__(self, vocab_size: int, dim_embedding: int = 512, scale=True):
+    def __init__(self, vocab_size: int, dim_embedding: int = 256, scale=True):
         super().__init__()
         self.token_embedding_table = nn.Embedding(vocab_size, dim_embedding)
         self.dim_embedding = dim_embedding
