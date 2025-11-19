@@ -19,7 +19,7 @@ class CharTokenizer(AbstractTokenizer):
     @classmethod
     def train(cls, texts: list[str]) -> 'CharTokenizer':
         tokenizer = cls()
-        all_text = "".join(texts)
+        all_text = "\n".join(texts)
         tokenizer._chars = sorted(set(all_text))
         tokenizer._char_to_token = {ch: i for i, ch in enumerate(tokenizer._chars)}
         tokenizer._token_to_char = {i: ch for i, ch in enumerate(tokenizer._chars)}
