@@ -17,17 +17,10 @@ class PositionalEncoding(nn.Module):
     ):
         super().__init__()
 
-        position_encoding_table = torch.zeros(
-            max_seq_len, dim_embedding
-        )  # [max_seq_len, dim_embedding]
-        position = torch.arange(0, max_seq_len, dtype=torch.float).unsqueeze(
-            dim=1
-        )  # [max_seq_len, 1]
+        position_encoding_table = torch.zeros(max_seq_len, dim_embedding)  # [max_seq_len, dim_embedding]
+        position = torch.arange(0, max_seq_len, dtype=torch.float).unsqueeze(dim=1)  # [max_seq_len, 1]
 
-        div_term = torch.exp(
-            torch.arange(0, dim_embedding, 2).float()
-            * (-math.log(10000.0) / dim_embedding)
-        )
+        div_term = torch.exp(torch.arange(0, dim_embedding, 2).float() * (-math.log(10000.0) / dim_embedding))
 
         # Broadcasting: [max_seq_len, 1] * [dim_embedding/2] -> [max_seq_len, dim_embedding/2]
         position_encoding_table[:, 0::2] = torch.sin(position * div_term)
@@ -44,7 +37,7 @@ class PositionalEncoding(nn.Module):
         # [1, seq_len, dim_embedding]
         positional_encodings = self.position_encoding_table[:, : x.size(1), :]
 
-        # [batch_size, seq_len, dim_embedding] + [1, seq_len, dim_embedding] -> [batch_size, seq_len, dim_embedding] (broadcasting)
+        # [batch_size, seq_len, dim_embedding] + [1, seq_len, dim_embedding] -> [batch_size, seq_len, dim_embedding]
         x = x + positional_encodings
 
         return self.dropout(x)
