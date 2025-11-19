@@ -1,11 +1,10 @@
 import pytest
 
-from src.tokenizer.BPETokenizer import BPETokenizer
+from src.tokenizer.bpe_tokenizer import BPETokenizer
 
 @pytest.fixture
 def tokenizer():
-    BPETokenizer.set_vocabulary_size(260)
-    return BPETokenizer.train(["a cat with a hat eats the hat cat"])
+    return BPETokenizer.train(["a cat with a hat eats the hat cat"], target_size=260)
 
 def test_encode_decode(tokenizer):
     test_text = "brat the mat"

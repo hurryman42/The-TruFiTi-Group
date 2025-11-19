@@ -4,8 +4,6 @@ from src.tokenizer.abstract_tokenizer import AbstractTokenizer
 
 
 class BPETokenizer(AbstractTokenizer):
-    BASE_VOCAB_SIZE = 256
-    vocabulary_size = BASE_VOCAB_SIZE
 
     def __init__(self):
         super().__init__()
@@ -21,7 +19,7 @@ class BPETokenizer(AbstractTokenizer):
         for i in range(256):
             result[i] = i.to_bytes()
 
-        return result.copy()
+        return result
 
     def _is_prefix_of(self, list1, list2) -> bool:
         """
@@ -34,7 +32,7 @@ class BPETokenizer(AbstractTokenizer):
 
     def _apply_merge_rule(self, tokens: list[int], rule) -> list[int]:
         """
-        Applies merge rules to a list of tokens.
+        Applies a merge rule to a list of tokens.
         """
         result = []
         i = 0
@@ -42,7 +40,7 @@ class BPETokenizer(AbstractTokenizer):
             if i < len(tokens)-1:
                 if (tokens[i] == rule[0]) and (tokens[i+1] == rule[1]):
                     result.append(rule[2])
-                    i +=2
+                    i += 2
                 else:
                     result.append(tokens[i])
                     i += 1
@@ -50,7 +48,7 @@ class BPETokenizer(AbstractTokenizer):
                 result.append(tokens[i])
                 i += 1
 
-        return result.copy()
+        return result
 
     def encode(self, text: str) -> list[int]:
         """
@@ -61,16 +59,16 @@ class BPETokenizer(AbstractTokenizer):
 
         i = 0
         while i < len(input_bytes):
-            temp = -1
-            temp_len = 0
+            max_key = -1
+            step_length = 0
             for key, value in self._vocabulary.items():
-                if self._is_prefix_of(value, input_bytes[i:]) and (key > temp):
-                    temp = key
-                    temp_len = len(value)
-            result.append(temp)
-            i += temp_len
+                if self._is_prefix_of(value, input_bytes[i:]) and (key > max_key):
+                    max_key = key
+                    step_length = len(value)
+            result.append(max_key)
+            i += step_length
 
-        return result.copy()
+        return result
 
     def decode(self, tokens: list[int]) -> str:
         """
@@ -81,14 +79,16 @@ class BPETokenizer(AbstractTokenizer):
         for token in tokens:
             result += self._vocabulary[token]
 
-        return result.decode("utf-8")
+        return result.decode("utf-8", errors="replace")
+
+    @property
+    def get_vocab_size(self) -> int:
+        return len(self._vocabulary)
 
     @classmethod
-    def set_vocabulary_size(cls, size: int) -> None:
-        cls.vocabulary_size = size
+    def train(cls, texts: list[str], **kwargs) -> 'BPETokenizer':
+        target_size = kwargs.get("target_size", 1000)
 
-    @classmethod
-    def train(cls, texts: list[str]) -> 'BPETokenizer':
         tokenizer = cls()
 
         all_words = list()
@@ -97,13 +97,13 @@ class BPETokenizer(AbstractTokenizer):
             for word in words:
                 all_words.append(tokenizer.encode(word))
 
-        for i in range(cls.BASE_VOCAB_SIZE, cls.vocabulary_size):
+        for i in range(len(tokenizer._vocabulary), target_size):
 
             counter = {}
 
             for word in all_words:
                 for j in range(len(word) - 1):
-                    pair = str(word[j]) + "-" + str(word[j + 1])  # necessary because lists are not hashable in Python
+                    pair = str(word[j]) + "-" + str(word[j + 1])  #necessary because lists are not hashable in Python
                     if pair in counter:
                         counter[pair] += 1
                     else:
@@ -123,8 +123,8 @@ class BPETokenizer(AbstractTokenizer):
             for k in range(len(all_words)):
                 all_words[k] = tokenizer._apply_merge_rule(all_words[k], new_rule)
 
-        print(tokenizer._vocabulary)
-        print(tokenizer._merge_rules)
+        print("Vocabulary:", tokenizer._vocabulary)
+        print("Merge Rules:", tokenizer._merge_rules)
 
         return tokenizer
 

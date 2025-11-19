@@ -17,7 +17,7 @@ class CharTokenizer(AbstractTokenizer):
         return "".join(self._token_to_char.get(i, '�') for i in tokens)
 
     @classmethod
-    def train(cls, texts: list[str]) -> 'CharTokenizer':
+    def train(cls, texts: list[str], **kwargs) -> 'CharTokenizer':
         tokenizer = cls()
         all_text = "".join(texts)
         tokenizer._chars = sorted(set(all_text))
