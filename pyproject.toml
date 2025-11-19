@@ -17,12 +17,29 @@ dependencies = [
     "pytest (>=8.4.2,<9.0.0)",
     "torch (>=2.9.0,<3.0.0)",
     "torchvision (>=0.24.0,<0.25.0)",
-    "notebook (>=7.4.7,<8.0.0)",
-    "ruff (>=0.14.5,<0.15.0)"
+    "notebook (>=7.4.7,<8.0.0)"
 ]
 
 [tool.poetry]
 package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^4.4.0"
+ruff = "^0.14.5"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # Pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade (modernere Python-Syntax)
+    "B",   # flake8-bugbear (findet häufige Bugs)
+]
+ignore = []
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

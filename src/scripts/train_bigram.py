@@ -2,9 +2,9 @@ from pathlib import Path
 
 import torch
 
+from src.models.bigram_language_model import BigramLanguageModel
 from src.models.embeddings.positional_encoding import PositionalEncoding
 from src.models.embeddings.token_embedding import TokenEmbedding
-from src.models.bigram_language_model import BigramLanguageModel
 from src.scripts.read_file import read_file
 from src.tokenizer.char_tokenizer import CharTokenizer
 
@@ -26,9 +26,7 @@ def load_char_tokenizer() -> CharTokenizer:
 
 
 def load_text() -> str:
-    input_file = (
-        BASE_DIR.parent / "data" / "letterboxd_filtered_short_synopsis_film.jsonl"
-    )
+    input_file = BASE_DIR.parent / "data" / "letterboxd_filtered_short_synopsis_film.jsonl"
     texts = read_file(input_file)
 
     print(f"Number of reviews: {len(texts):,}".replace(",", "."))
@@ -44,9 +42,7 @@ def encode_text(text: str, tokenizer: CharTokenizer) -> list[int]:
     return encoded_text
 
 
-def train_val_split(
-    data: list[int], train_size: float
-) -> tuple[torch.Tensor, torch.Tensor]:
+def train_val_split(data: list[int], train_size: float) -> tuple[torch.Tensor, torch.Tensor]:
     data = torch.tensor(data, dtype=torch.long)
     n = int(train_size * len(data))
     train_data = data[:n]
@@ -133,9 +129,7 @@ def train(
                 EVAL_ITERS,
                 device,
             )
-            print(
-                f"Step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}"
-            )
+            print(f"Step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
 
         xb, yb = get_batch("train", train_data, val_data, SEQ_LEN, BATCH_SIZE, device)
 
@@ -181,13 +175,7 @@ def main():
     char_tokenizer = load_char_tokenizer()
     vocab_size = char_tokenizer.get_vocab_size
     text = load_text()
-    device = (
-        "cuda"
-        if torch.cuda.is_available()
-        else "mps"
-        if torch.backends.mps.is_available()
-        else "cpu"
-    )
+    device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
     print(f"Using device: {device}\n")
 
     # Prepare data

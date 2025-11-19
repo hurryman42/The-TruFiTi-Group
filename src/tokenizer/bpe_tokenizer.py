@@ -12,12 +12,12 @@ class BPETokenizer(AbstractTokenizer):
         raise NotImplementedError()
 
     @classmethod
-    def train(cls, texts: list[str]) -> 'BPETokenizer':
+    def train(cls, texts: list[str]) -> "BPETokenizer":
         raise NotImplementedError()
 
     def save(self, path: str):
         raise NotImplementedError()
 
     @classmethod
-    def load(cls, path: str) -> 'BPETokenizer':
+    def load(cls, path: str) -> "BPETokenizer":
         raise NotImplementedError()

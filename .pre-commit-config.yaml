@@ -1,0 +1,20 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      # linter
+      - id: ruff
+        args: [--fix]
+      # formatter
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: make-test
+        name: make test
+        entry: make test
+        language: system
+        pass_filenames: false
+        always_run: true
+        verbose: true
+        stages: [pre-push]

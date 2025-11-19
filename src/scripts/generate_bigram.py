@@ -1,8 +1,10 @@
 from pathlib import Path
+
 import torch
+
+from src.models.bigram_language_model import BigramLanguageModel
 from src.models.embeddings.positional_encoding import PositionalEncoding
 from src.models.embeddings.token_embedding import TokenEmbedding
-from src.models.bigram_language_model import BigramLanguageModel
 from src.tokenizer.char_tokenizer import CharTokenizer
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -14,21 +16,11 @@ KEY_TOKEN_EMBEDDING = "token_embedding"
 KEY_POS_ENCODING = "pos_encoding"
 KEY_SEQ_LEN = "seq_len"
 
-device = (
-    "cuda"
-    if torch.cuda.is_available()
-    else "mps"
-    if torch.backends.mps.is_available()
-    else "cpu"
-)
+device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
 print(f"Using device: {device}\n")
 
-tokenizer = CharTokenizer.load(
-    str(BASE_DIR.parent / "tokenizer" / "char_tokenizer.json")
-)
-checkpoint = torch.load(
-    BASE_DIR.parent / "models" / "bigram_model.pt", map_location=device
-)
+tokenizer = CharTokenizer.load(str(BASE_DIR.parent / "tokenizer" / "char_tokenizer.json"))
+checkpoint = torch.load(BASE_DIR.parent / "models" / "bigram_model.pt", map_location=device)
 
 VOCAB_SIZE = checkpoint[KEY_VOCAB_SIZE]
 D_MODEL = checkpoint[KEY_D_MODEL]
@@ -49,15 +41,11 @@ model.eval()
 
 def generate(prompt="", length=200):
     if prompt:
-        idx = torch.tensor(
-            tokenizer.encode(prompt), dtype=torch.long, device=device
-        ).unsqueeze(0)
+        idx = torch.tensor(tokenizer.encode(prompt), dtype=torch.long, device=device).unsqueeze(0)
     else:
         idx = torch.zeros((1, 1), dtype=torch.long, device=device)
 
-    result = model.generate(
-        token_embedding, pos_encoding, idx, length, max_context_len=128
-    )
+    result = model.generate(token_embedding, pos_encoding, idx, length, max_context_len=128)
     return tokenizer.decode(result[0].tolist())
 
 

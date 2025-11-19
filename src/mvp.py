@@ -8,10 +8,9 @@ DATA_PATH = BASE_DIR.parent / "data" / "data.txt"
 
 data = []
 
-def read_data():
-    """
 
-    """
+def read_data():
+    """ """
     print("Reading data...\n")
 
     with DATA_PATH.open(encoding="utf8") as f:
@@ -21,11 +20,14 @@ def read_data():
             data.append(line.strip())
             line = f.readline()
 
+
 def run_training():
     pass
 
+
 def sentence_to_list(sentence):
     return sentence.split(" ")
+
 
 def list_to_sentence(list):
     result = ""
@@ -36,10 +38,11 @@ def list_to_sentence(list):
             result += list[i] + " "
     return result
 
+
 def run_evaluation():
     accuracy_sum = 0
     # creativity_sum = 0
-    num = min(len(data)-1, 100)
+    num = min(len(data) - 1, 100)
     for i in range(num):
         test_prompt = list_to_sentence(sentence_to_list(data[i])[:-2])
         test_expected_answer = list_to_sentence(data[i].split(" ")[-2:])
@@ -54,9 +57,10 @@ def run_evaluation():
             accuracy_sum += 1
         print("\n")
 
-    print("Accuracy:", float(accuracy_sum/num))
+    print("Accuracy:", float(accuracy_sum / num))
     # print("Creativity:", float(creativity_sum/num))
     print("Evaluation complete.\n")
+
 
 def generate_response(prompt):
     # pick random data entry
@@ -68,8 +72,7 @@ def generate_response(prompt):
 
 
 # main
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     read_data()
 
     run_training()
