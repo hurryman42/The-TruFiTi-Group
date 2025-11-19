@@ -12,7 +12,7 @@ class AbstractTokenizer(ABC):
 
     @classmethod
     @abstractmethod
-    def train(cls, texts: list[str]) -> "AbstractTokenizer":
+    def train(cls, texts: list[str], **kwargs) -> 'AbstractTokenizer':
         pass
 
     @abstractmethod
