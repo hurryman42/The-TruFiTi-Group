@@ -23,6 +23,24 @@ dependencies = [
 [tool.poetry]
 package-mode = false
 
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^4.4.0"
+ruff = "^0.14.5"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # Pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade (modernere Python-Syntax)
+    "B",   # flake8-bugbear (findet häufige Bugs)
+]
+ignore = []
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"

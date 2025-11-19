@@ -9,10 +9,10 @@ def test_initialization():
 
     token_emb = TokenEmbedding(vocab_size, dim_embedding)
 
-    assert isinstance(token_emb.embedding, torch.nn.Embedding)
+    assert isinstance(token_emb.token_embedding_table, torch.nn.Embedding)
 
-    assert token_emb.embedding.num_embeddings == vocab_size
-    assert token_emb.embedding.embedding_dim == dim_embedding
+    assert token_emb.token_embedding_table.num_embeddings == vocab_size
+    assert token_emb.token_embedding_table.embedding_dim == dim_embedding
     assert token_emb.dim_embedding == dim_embedding
 
 

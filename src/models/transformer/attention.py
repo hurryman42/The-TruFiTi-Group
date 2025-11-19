@@ -1,16 +1,18 @@
-from torch import nn
+import torch.nn as nn
 
 
-class LearnedPositionEmbedding(nn.Module):
+class Head(nn.Module):
     def __init__(self):
+        super().__init__()
         pass
 
     def forward(self):
         pass
 
 
-class PositionalEncoding(nn.Module):
+class MultiHeadAttention(nn.Module):
     def __init__(self):
+        super().__init__()
         pass
 
     def forward(self):
