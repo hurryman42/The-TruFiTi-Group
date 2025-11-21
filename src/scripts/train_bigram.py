@@ -5,7 +5,7 @@ import torch
 from src.models.bigram_language_model import BigramLanguageModel
 from src.models.embeddings.positional_encoding import PositionalEncoding
 from src.models.embeddings.token_embedding import TokenEmbedding
-from src.scripts.read_file import read_file
+from src.scripts.read_file import read_file_only_reviews
 from src.tokenizer.char_tokenizer import CharTokenizer
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,7 +27,7 @@ def load_char_tokenizer() -> CharTokenizer:
 
 def load_text() -> str:
     input_file = BASE_DIR.parent / "data" / "letterboxd_filtered_short_synopsis_film.jsonl"
-    synopses, texts = read_file(input_file)
+    texts = read_file_only_reviews(input_file)
 
     print(f"Number of reviews: {len(texts):,}".replace(",", "."))
     text_string = "\n".join(texts)
