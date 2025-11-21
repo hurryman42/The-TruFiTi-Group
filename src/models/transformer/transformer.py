@@ -1,13 +1,53 @@
+import torch
 import torch.nn as nn
+import torch.nn.functional as F
+from block import Block
 
 
-class Transformer(nn.Module):
-    def __init__(self):
+class TransformerDecoderOnly(nn.Module):
+    def __init__(self, vocab_size, embedding_dimension, num_blocks, num_heads, head_dimension, block_size, ff_hidden_dimension, dropout=0.1):
         super().__init__()
-        pass
+        self.token_embedding = nn.Embedding(vocab_size, embedding_dimension)
+        self.position_embedding = nn.Embedding(block_size, embedding_dimension)
+        self.blocks = nn.ModuleList([
+            Block(embedding_dimension, num_heads, head_dimension, block_size, ff_hidden_dimension, dropout)
+            for _ in range(num_blocks)
+        ])
+        self.ln_f = nn.LayerNorm(embedding_dimension)           # final layer norm
+        self.head = nn.Linear(embedding_dimension, vocab_size)  # output projection
 
-    def forward(self):
-        pass
+        self.block_size = block_size
 
-    def generate(self):
-        pass
+    def forward(self, index):
+        batch_size, seq_length = index.shape
+        assert seq_length <= self.block_size, f"Cannot forward sequence of length {seq_length}, block size is only {self.block_size}"
+
+        token_emb = self.token_embedding(index)                 # (batch_size, seq_length, embed_dim)
+        pos = torch.arange(seq_length, device=index.device)     # (seq_length,)
+        pos_emb = self.position_embedding(pos)[None, :, :]      # (1, seq_length, embedding_dimension)
+        x = token_emb + pos_emb                                 # (batch_size, seq_length, embedding_dimension)
+
+        for block in self.blocks:
+            x = block(x)
+
+        x = self.ln_f(x)                # (batch_size, seq_length, embedding_dimension)
+        logits = self.head(x)           # (batch_size, seq_length, vocab_size)
+        return logits
+
+    @torch.no_grad() # <-- makes sure that no gradient history is built up during generation
+    def generate(self, index, max_new_tokens, temperature=1.0, top_k=None):
+        for _ in range(max_new_tokens):
+            index_conditional = index if index.size(1) <= self.block_size else index[:, -self.block_size:]  # crop to block_size if sequence context is growing too long
+            logits = self(index_conditional)                                                                # (batch_size, seq_length, vocab_size)
+            logits = logits[:, -1, :] / temperature                                                         # (batch_size, vocab_size) --- use last time step
+
+            if top_k is not None:
+                v, _ = torch.topk(logits, top_k)
+                mask = logits < v[:, [-1]]
+                logits[mask] = -float('inf')
+
+            probabilities = F.softmax(logits, dim=-1)                       # converts logits to (normalized) probabilities
+            next_token = torch.multinomial(probabilities, num_samples=1)    # sample from distribution
+            index = torch.cat((index, next_token), dim=1)            # append sampled index to running sequence
+
+        return index

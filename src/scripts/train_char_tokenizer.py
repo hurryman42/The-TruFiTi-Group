@@ -7,7 +7,7 @@ if __name__ == "__main__":
     BASE_DIR = Path(__file__).resolve().parent.parent
     input_file = BASE_DIR.parent / "data" / "letterboxd_filtered_short_synopsis_film.jsonl"
 
-    texts = read_file(input_file)
+    synopses, texts = read_file(input_file)
 
     char_tokenizer = CharTokenizer().train(texts)
 
