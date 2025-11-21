@@ -14,11 +14,11 @@ FilmCriticLM is a language model-based system developed to automatically generat
 
 ## Features & Development Stages
 
-<u>Level 1:</u> Just generate a film review.
+<u>Level 1:</u> Just generate a film review. (decoder-only transformer)
 - Input: Film summary
 - Output: A text that sounds like a review / could be a review to any film. (input is basically ignored)
 
-<u>Level 2: </u> Generate a review based on the given summary.
+<u>Level 2: </u> Generate a review based on the given summary. (also decoder-only transformer, but also other architectures)
 - Input: Film summary
 - Output: Coherent review that fits the film content.
 
