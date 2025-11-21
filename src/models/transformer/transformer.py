@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from block import Block
+from src.models.transformer.block import Block
 
 
 class TransformerDecoderOnly(nn.Module):

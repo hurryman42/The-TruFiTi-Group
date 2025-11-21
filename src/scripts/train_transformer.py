@@ -150,9 +150,9 @@ def main():
     train_data, val_data = train_val_split(encoded_texts, 0.9)
 
     # initialize model
-    model = TransformerDecoder(
+    model = TransformerDecoderOnly(
         vocab_size, D_MODEL, num_blocks=6, num_heads=8,
-        head_dim=32, block_size=SEQ_LEN, ff_hidden_dim=1024, dropout=0.1
+        head_dimension=32, block_size=SEQ_LEN, ff_hidden_dimension=1024, dropout=0.1
     ).to(device)
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Total model parameters: {total_params:,}\n".replace(",", "."))
