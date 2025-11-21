@@ -1,13 +1,13 @@
 from pathlib import Path
 
-from src.scripts.read_file import read_file
+from src.scripts.read_file import read_file_only_reviews, read_file_synopsis_review_pairs
 from src.tokenizer.char_tokenizer import CharTokenizer
 
 if __name__ == "__main__":
     BASE_DIR = Path(__file__).resolve().parent.parent
     input_file = BASE_DIR.parent / "data" / "letterboxd_filtered_short_synopsis_film.jsonl"
 
-    synopses, texts = read_file(input_file)
+    texts = read_file_synopsis_review_pairs(input_file)
 
     char_tokenizer = CharTokenizer().train(texts)
 

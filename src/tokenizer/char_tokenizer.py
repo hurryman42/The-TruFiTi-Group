@@ -11,7 +11,8 @@ class CharTokenizer(AbstractTokenizer):
         self._token_to_char = dict()
 
     def encode(self, text: str) -> list[int]:
-        return [self._char_to_token.get(char, -1) for char in text]
+        unknown_index = self._char_to_token["<UNK>"]
+        return [self._char_to_token.get(char, unknown_index) for char in text]
 
     def decode(self, tokens: list[int]) -> str:
         return "".join(self._token_to_char.get(i, "�") for i in tokens)
@@ -21,6 +22,12 @@ class CharTokenizer(AbstractTokenizer):
         tokenizer = cls()
         all_text = "\n".join(texts)
         tokenizer._chars = sorted(set(all_text))
+
+        unknown_token = "<UNK>"
+        if unknown_token in tokenizer._chars:
+            tokenizer._chars.remove(unknown_token)
+        tokenizer._chars = [unknown_token] + tokenizer._chars
+
         tokenizer._char_to_token = {ch: i for i, ch in enumerate(tokenizer._chars)}
         tokenizer._token_to_char = {i: ch for i, ch in enumerate(tokenizer._chars)}
 

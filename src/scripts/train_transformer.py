@@ -7,7 +7,7 @@ from src.scripts.read_file import read_file_synopsis_review_pairs
 from src.models.transformer.transformer import TransformerDecoderOnly
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-D_MODEL = 256
+DIMENSION_MODEL = 256
 SEQ_LEN = 128
 BATCH_SIZE = 32
 EVAL_ITERS = 20  # number of batches to average for loss estimation
@@ -73,6 +73,7 @@ def estimate_loss(
         losses = torch.zeros(eval_iters)
         for k in range(eval_iters):
             x, y = get_batch(split, train_data, val_data, seq_len, batch_size, device)
+            print(x.min(), x.max())
             logits = model(x)
             loss = torch.nn.functional.cross_entropy(
                 logits.view(-1, logits.size(-1)),
@@ -130,7 +131,7 @@ def save_model(
         {
             "model": model.state_dict(),
             "vocab_size": char_tokenizer.get_vocab_size,
-            "d_model": D_MODEL,
+            "dimension_model": DIMENSION_MODEL,
             "seq_len": SEQ_LEN,
         },
         save_path,
@@ -151,7 +152,7 @@ def main():
 
     # initialize model
     model = TransformerDecoderOnly(
-        vocab_size, D_MODEL, num_blocks=6, num_heads=8,
+        vocab_size, embedding_dimension=DIMENSION_MODEL, num_blocks=6, num_heads=8,
         head_dimension=32, block_size=SEQ_LEN, ff_hidden_dimension=1024, dropout=0.1
     ).to(device)
     total_params = sum(p.numel() for p in model.parameters())

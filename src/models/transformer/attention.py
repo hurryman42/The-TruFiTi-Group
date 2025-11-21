@@ -9,23 +9,23 @@ class Head(nn.Module):
         self.key = nn.Linear(embedding_dimension, head_dimension, bias=False)
         self.query = nn.Linear(embedding_dimension, head_dimension, bias=False)
         self.value = nn.Linear(embedding_dimension, head_dimension, bias=False)
-        self.register_buffer("tril", torch.tril(torch.ones(block_size, block_size)))
+        #self.register_buffer("triu", torch.triu(torch.ones(block_size, block_size)))
         self.head_dimension = head_dimension
 
     def forward(self, x):
         batch_size, seq_length, embedding_dimension = x.shape
-        K = self.key(x)
-        Q = self.query(x)
-        V = self.value(x)
+        K = self.key(x)     # (batch, seq, head_dim)
+        Q = self.query(x)   # (batch, seq, head_dim)
+        V = self.value(x)   # (batch, seq, head_dim)
 
-        attention_scores = Q @ K.transpose(-2, -1) / (self.head_dim ** 0.5) # =(QK^T)/(\sqrt{d})
+        attention_scores = Q @ K.transpose(-2, -1) / (self.head_dimension ** 0.5) # =(QK^T)/(\sqrt{d}) (batch, seq, seq)
 
         # causal mask (blocks out the future)
         mask = torch.triu(torch.ones(seq_length, seq_length, device=x.device), diagonal=1).bool()
-        attention_scores = attention_scores.masked_fill(mask, float('-inf'))
+        attention_scores = attention_scores.masked_fill(mask, float('-inf'))    # (batch, seq, seq)
 
-        attention_probs = F.softmax(attention_scores, dim=-1)
-        return attention_probs @ V
+        attention_probabilities = F.softmax(attention_scores, dim=-1)           # (batch, seq, head_dim)
+        return attention_probabilities @ V
 
 
 class MultiHeadAttention(nn.Module):
