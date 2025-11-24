@@ -57,16 +57,11 @@ class BPETokenizer(AbstractTokenizer):
         result = []
         input_bytes = text.encode("utf-8")
 
-        i = 0
-        while i < len(input_bytes):
-            max_key = -1
-            step_length = 0
-            for key, value in self._vocabulary.items():
-                if self._is_prefix_of(value, input_bytes[i:]) and (key > max_key):
-                    max_key = key
-                    step_length = len(value)
-            result.append(max_key)
-            i += step_length
+        for element in input_bytes:
+            result.append([key for key,value in self._vocabulary.items() if value==element][0])
+
+        for rule in self._merge_rules:
+            result = self._apply_merge_rule(result, rule)
 
         return result
 
@@ -91,23 +86,23 @@ class BPETokenizer(AbstractTokenizer):
 
         tokenizer = cls()
 
-        all_words = list()
+        all_text = str()
         for text in texts:
-            words = text.strip().split(" ")
-            for word in words:
-                all_words.append(tokenizer.encode(word))
+            for i in range(len(text)):
+                all_text += text[i]
+
+        all_text = tokenizer.encode(all_text)
 
         for i in range(len(tokenizer._vocabulary), target_size):
 
             counter = {}
 
-            for word in all_words:
-                for j in range(len(word) - 1):
-                    pair = str(word[j]) + "-" + str(word[j + 1])  #necessary because lists are not hashable in Python
-                    if pair in counter:
-                        counter[pair] += 1
-                    else:
-                        counter[pair] = 1
+            for j in range(len(all_text) - 1):
+                pair = str(all_text[j]) + "-" + str(all_text[j + 1])  #necessary because lists are not hashable in Python
+                if pair in counter:
+                    counter[pair] += 1
+                else:
+                    counter[pair] = 1
 
             dominant = max(counter, key=counter.get)
             dominant_pair = dominant.split("-")
@@ -120,8 +115,7 @@ class BPETokenizer(AbstractTokenizer):
             new_rule = [int(dominant_pair[0]), int(dominant_pair[1]), last_index]
             tokenizer._merge_rules.append(new_rule)
 
-            for k in range(len(all_words)):
-                all_words[k] = tokenizer._apply_merge_rule(all_words[k], new_rule)
+            all_text = tokenizer._apply_merge_rule(all_text, new_rule)
 
         print("Vocabulary:", tokenizer._vocabulary)
         print("Merge Rules:", tokenizer._merge_rules)
@@ -130,10 +124,13 @@ class BPETokenizer(AbstractTokenizer):
 
     def save(self, path: str):
         with open(path, 'w') as f:
-            json.dump({
-                'vocabulary': self._vocabulary,
-                'merge_rules': self._merge_rules
-            }, f)
+            json.dump(
+                {
+                    'vocabulary': self._vocabulary,
+                    'merge_rules': self._merge_rules
+                },
+                f,
+            )
 
     @classmethod
     def load(cls, path: str) -> 'BPETokenizer':
