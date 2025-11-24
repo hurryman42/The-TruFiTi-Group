@@ -54,11 +54,7 @@ class BPETokenizer(AbstractTokenizer):
         """
         Encodes a string into a list of integers.
         """
-        result = []
-        input_bytes = text.encode("utf-8")
-
-        for element in input_bytes:
-            result.append([key for key,value in self._vocabulary.items() if value==element][0])
+        result = text.encode("utf-8")
 
         for rule in self._merge_rules:
             result = self._apply_merge_rule(result, rule)
@@ -123,10 +119,16 @@ class BPETokenizer(AbstractTokenizer):
         return tokenizer
 
     def save(self, path: str):
+
+        # bytes not JSON serializable, hence decoding bytes first
+        temp_vocabulary = dict()
+        for key, value in self._vocabulary.items():
+            temp_vocabulary[key] = value.decode("utf-8", errors="replace")
+
         with open(path, 'w') as f:
             json.dump(
                 {
-                    'vocabulary': self._vocabulary,
+                    'vocabulary': temp_vocabulary,
                     'merge_rules': self._merge_rules
                 },
                 f,
@@ -137,6 +139,13 @@ class BPETokenizer(AbstractTokenizer):
         tokenizer = cls()
         with open(path, 'r') as f:
             data = json.load(f)
-            tokenizer._vocabulary = data['vocabulary']
+
+            # bytes not JSON serializable, so encoding into bytes necessary
+            new_vocabulary = dict()
+            temp_vocabulary = data['vocabulary']
+            for key, value in temp_vocabulary.items():
+                new_vocabulary[int(key)] = value.encode("utf-8")
+
+            tokenizer._vocabulary = new_vocabulary
             tokenizer._merge_rules = data['merge_rules']
         return tokenizer
