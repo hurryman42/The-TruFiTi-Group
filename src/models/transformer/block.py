@@ -4,11 +4,11 @@ from src.models.transformer.attention import MultiHeadAttention
 from src.models.transformer.feed_forward import FeedForward
 
 
-class Block(nn.Module):
-    def __init__(self, embedding_dimension, num_heads, head_dimension, block_size, ff_hidden_dimension, dropout=0.1):
+class TransformerBlock(nn.Module):
+    def __init__(self, embedding_dimension, num_heads, head_dimension, max_seq_len, ff_hidden_dimension, dropout=0.1):
         super().__init__()
         self.layernorm1 = nn.LayerNorm(embedding_dimension)
-        self.attention = MultiHeadAttention(num_heads, embedding_dimension, head_dimension, block_size)
+        self.attention = MultiHeadAttention(num_heads, embedding_dimension, head_dimension, max_seq_len)
         self.layernorm2 = nn.LayerNorm(embedding_dimension)
         self.feedforward = FeedForward(embedding_dimension, ff_hidden_dimension, dropout)
 

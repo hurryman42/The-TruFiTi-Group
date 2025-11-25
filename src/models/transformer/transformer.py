@@ -1,22 +1,22 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from src.models.transformer.block import Block
+from src.models.transformer.block import TransformerBlock
 
 
 class TransformerDecoderOnly(nn.Module):
-    def __init__(self, vocab_size, embedding_dimension, num_blocks, num_heads, head_dimension, block_size, ff_hidden_dimension, dropout=0.1):
+    def __init__(self, vocab_size, embedding_dimension, num_blocks, num_heads, head_dimension, max_seq_len, ff_hidden_dimension, dropout=0.1):
         super().__init__()
         self.token_embedding = nn.Embedding(vocab_size, embedding_dimension)
-        self.position_embedding = nn.Embedding(block_size, embedding_dimension)
+        self.position_embedding = nn.Embedding(max_seq_len, embedding_dimension)
         self.blocks = nn.ModuleList([
-            Block(embedding_dimension, num_heads, head_dimension, block_size, ff_hidden_dimension, dropout)
+            TransformerBlock(embedding_dimension, num_heads, head_dimension, max_seq_len, ff_hidden_dimension, dropout)
             for _ in range(num_blocks)
         ])
-        self.ln_f = nn.LayerNorm(embedding_dimension)           # final layer norm
-        self.head = nn.Linear(embedding_dimension, vocab_size)  # output projection
+        self.ln_f = nn.LayerNorm(embedding_dimension)              # final layer norm
+        self.ln_head = nn.Linear(embedding_dimension, vocab_size)  # output projection
 
-        self.block_size = block_size
+        self.block_size = max_seq_len
 
     def forward(self, index):
         batch_size, seq_length = index.shape
@@ -24,14 +24,14 @@ class TransformerDecoderOnly(nn.Module):
 
         token_emb = self.token_embedding(index)                 # (batch_size, seq_length, embed_dim)
         pos = torch.arange(seq_length, device=index.device)     # (seq_length,)
-        pos_emb = self.position_embedding(pos)[None, :, :]      # (1, seq_length, embedding_dimension)
+        pos_emb = self.position_embedding(pos).unsqueeze(0)     # (1, seq_length, embedding_dimension)
         x = token_emb + pos_emb                                 # (batch_size, seq_length, embedding_dimension)
 
         for block in self.blocks:
             x = block(x)
 
-        x = self.ln_f(x)                # (batch_size, seq_length, embedding_dimension)
-        logits = self.head(x)           # (batch_size, seq_length, vocab_size)
+        x = self.ln_f(x)               # (batch_size, seq_length, embedding_dimension)
+        logits = self.ln_head(x)       # (batch_size, seq_length, vocab_size)
         return logits
 
     @torch.no_grad() # <-- makes sure that no gradient history is built up during generation

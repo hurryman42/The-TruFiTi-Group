@@ -4,6 +4,8 @@ from src.tokenizer.abstract_tokenizer import AbstractTokenizer
 
 
 class CharTokenizer(AbstractTokenizer):
+    UNKNOWN_TOKEN = "<UNK>"
+
     def __init__(self):
         super().__init__()
         self._chars = []
@@ -11,7 +13,7 @@ class CharTokenizer(AbstractTokenizer):
         self._token_to_char = dict()
 
     def encode(self, text: str) -> list[int]:
-        unknown_index = self._char_to_token["<UNK>"]
+        unknown_index = self._char_to_token[self.UNKNOWN_TOKEN]
         return [self._char_to_token.get(char, unknown_index) for char in text]
 
     def decode(self, tokens: list[int]) -> str:
@@ -21,24 +23,24 @@ class CharTokenizer(AbstractTokenizer):
     def train(cls, texts: list[str]) -> "CharTokenizer":
         tokenizer = cls()
         all_text = "\n".join(texts)
-        tokenizer._chars = sorted(set(all_text))
+        chars = sorted(set(all_text))
 
-        unknown_token = "<UNK>"
-        if unknown_token in tokenizer._chars:
-            tokenizer._chars.remove(unknown_token)
-        tokenizer._chars = [unknown_token] + tokenizer._chars
+        if cls.UNKNOWN_TOKEN not in chars:
+            chars.insert(0, cls.UNKNOWN_TOKEN)  # immer ID 0 → Standard
 
-        tokenizer._char_to_token = {ch: i for i, ch in enumerate(tokenizer._chars)}
-        tokenizer._token_to_char = {i: ch for i, ch in enumerate(tokenizer._chars)}
+        tokenizer._chars = chars
 
-        print(f"Vocabulary size: {len(tokenizer._chars)}")
-        print(f"Characters: {tokenizer._chars}")
+        tokenizer._char_to_token = {ch: i for i, ch in enumerate(chars)}
+        tokenizer._token_to_char = {i: ch for i, ch in enumerate(chars)}
+
+        print(f"Vocabulary size: {len(chars)}")
+        print(f"Characters: {chars}")
         return tokenizer
 
     def save(self, path: str):
         with open(path, "w") as f:
             json.dump(
-                {
+            {
                     "chars": self._chars,
                     "char_to_token": self._char_to_token,
                     "token_to_char": {str(k): v for k, v in self._token_to_char.items()},

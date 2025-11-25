@@ -1,5 +1,4 @@
 import json
-import sys
 
 
 def read_file_only_reviews(file_path) -> list[str]:
@@ -40,6 +39,3 @@ def read_file_synopsis_review_pairs(file_path) -> list[str]:
     print(f"Number of synopsis-review-pairs: {len(pairs):,}".replace(",", "."))
 
     return pairs
-
-if __name__ == "__main__":  # for testing
-    read_file_synopsis_review_pairs(sys.argv[1])

@@ -1,5 +1,6 @@
 from pathlib import Path
 import torch
+
 #from tqdm import tqdm
 
 from src.tokenizer.char_tokenizer import CharTokenizer
@@ -7,13 +8,19 @@ from src.scripts.read_file import read_file_synopsis_review_pairs
 from src.models.transformer.transformer import TransformerDecoderOnly
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
 DIMENSION_MODEL = 256
-SEQ_LEN = 128
+NUM_HEADS = 8
+MAX_SEQ_LEN = 128
+FF_HIDDEN_DIMENSION = 4 * DIMENSION_MODEL
+
 BATCH_SIZE = 32
-EVAL_ITERS = 20  # number of batches to average for loss estimation
-MAX_ITERS = 3000
-EVAL_INTERVAL = 1000  # interval of printing estimated loss
 LEARNING_RATE = 1e-3
+MAX_ITERS = 3000
+
+EVAL_INTERVAL = 1000  # interval of printing estimated loss
+EVAL_ITERS = 20  # number of batches to average for loss estimation
+WEIGHT_DECAY = 0 # for AdamW
 
 
 def load_char_tokenizer() -> CharTokenizer:
@@ -73,7 +80,6 @@ def estimate_loss(
         losses = torch.zeros(eval_iters)
         for k in range(eval_iters):
             x, y = get_batch(split, train_data, val_data, seq_len, batch_size, device)
-            print(x.min(), x.max())
             logits = model(x)
             loss = torch.nn.functional.cross_entropy(
                 logits.view(-1, logits.size(-1)),
@@ -102,14 +108,14 @@ def train(
                 model,
                 train_data,
                 val_data,
-                SEQ_LEN,
+                MAX_SEQ_LEN,
                 BATCH_SIZE,
                 EVAL_ITERS,
                 device,
             )
             print(f"Step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
 
-        xb, yb = get_batch("train", train_data, val_data, SEQ_LEN, BATCH_SIZE, device)
+        xb, yb = get_batch("train", train_data, val_data, MAX_SEQ_LEN, BATCH_SIZE, device)
         logits = model(xb)
         loss = torch.nn.functional.cross_entropy(
             logits.view(-1, logits.size(-1)),
@@ -132,32 +138,29 @@ def save_model(
             "model": model.state_dict(),
             "vocab_size": char_tokenizer.get_vocab_size,
             "dimension_model": DIMENSION_MODEL,
-            "seq_len": SEQ_LEN,
+            "seq_len": MAX_SEQ_LEN,
         },
         save_path,
     )
     print(f"\nModel saved to {save_path}")
 
 def main():
-    # Setup
     char_tokenizer = load_char_tokenizer()
     vocab_size = char_tokenizer.get_vocab_size
     text = load_text()
     device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
     print(f"Using device: {device}\n")
 
-    # prepare data
     encoded_texts = encode_text(text, char_tokenizer)
     train_data, val_data = train_val_split(encoded_texts, 0.9)
 
-    # initialize model
     model = TransformerDecoderOnly(
-        vocab_size, embedding_dimension=DIMENSION_MODEL, num_blocks=6, num_heads=8,
-        head_dimension=32, block_size=SEQ_LEN, ff_hidden_dimension=1024, dropout=0.1
+        vocab_size, embedding_dimension=DIMENSION_MODEL, num_blocks=6, num_heads=NUM_HEADS,
+        head_dimension=DIMENSION_MODEL // NUM_HEADS, max_seq_len=MAX_SEQ_LEN, ff_hidden_dimension=FF_HIDDEN_DIMENSION, dropout=0.1
     ).to(device)
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Total model parameters: {total_params:,}\n".replace(",", "."))
-    optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
 
     train(
         model,
