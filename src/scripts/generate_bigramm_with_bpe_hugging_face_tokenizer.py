@@ -10,7 +10,7 @@ from src.models.embeddings.token_embedding import TokenEmbedding
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 KEY_VOCAB_SIZE = "vocab_size"
-KEY_D_MODEL = "d_model"
+KEY_DIMENSION_MODEL = "dimension_model"
 KEY_MODEL = "model"
 KEY_TOKEN_EMBEDDING = "token_embedding"
 KEY_POS_ENCODING = "pos_encoding"
@@ -25,17 +25,17 @@ print(f"Tokenizer vocabulary size: {tokenizer.get_vocab_size()}")
 checkpoint = torch.load(BASE_DIR.parent / "models" / "bigram_model_bpe_with_hugging_face.pt", map_location=device)
 
 VOCAB_SIZE = checkpoint[KEY_VOCAB_SIZE]
-D_MODEL = checkpoint[KEY_D_MODEL]
+DIMENSION_MODEL = checkpoint[KEY_DIMENSION_MODEL]
 SEQ_LEN = checkpoint[KEY_SEQ_LEN]
 
 print(f"Model vocabulary size: {VOCAB_SIZE}")
-print(f"Model dimension: {D_MODEL}")
+print(f"Model dimension: {DIMENSION_MODEL}")
 print(f"Sequence length: {SEQ_LEN}\n")
 
 # Initialize models
-token_embedding = TokenEmbedding(VOCAB_SIZE, D_MODEL, scale=False).to(device)
-pos_encoding = PositionalEncoding(D_MODEL, max_seq_len=SEQ_LEN).to(device)
-model = BigramLanguageModel(VOCAB_SIZE, D_MODEL).to(device)
+token_embedding = TokenEmbedding(VOCAB_SIZE, DIMENSION_MODEL, scale=False).to(device)
+pos_encoding = PositionalEncoding(DIMENSION_MODEL, max_seq_len=SEQ_LEN).to(device)
+model = BigramLanguageModel(VOCAB_SIZE, DIMENSION_MODEL).to(device)
 
 # Load weights
 token_embedding.load_state_dict(checkpoint[KEY_TOKEN_EMBEDDING])

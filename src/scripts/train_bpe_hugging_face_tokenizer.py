@@ -47,11 +47,11 @@ def print_vocab(tokenizer: Tokenizer, first_n: int = 50, last_n: int = 50):
 
     print(f"\nVocab Size: {len(vocab)}")
 
-    print(f"\nErste {first_n} Tokens:")
+    print(f"\nFirst {first_n} Tokens:")
     for token, id in sorted_vocab[:first_n]:
         print(f"  {id:4d}: '{token}'")
 
-    print(f"\nLetzte {last_n} Tokens:")
+    print(f"\nLast {last_n} Tokens:")
     for token, id in sorted_vocab[-last_n:]:
         print(f"  {id:4d}: '{token}'")
 

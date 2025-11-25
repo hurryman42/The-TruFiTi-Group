@@ -9,7 +9,7 @@ from src.models.embeddings.token_embedding import TokenEmbedding
 from src.scripts.read_file import read_file
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-D_MODEL = 256
+DIMENSION_MODEL = 256
 SEQ_LEN = 128
 BATCH_SIZE = 64
 EVAL_ITERS = 50  # Number of batches to average for loss estimation
@@ -38,7 +38,6 @@ def encode_texts_batched(texts: list[str], tokenizer: Tokenizer, batch_size: int
 
     for i in range(0, len(texts), batch_size):
         batch = texts[i : i + batch_size]
-        # encode_batch nutzt Multithreading!
         encoded_batch = tokenizer.encode_batch(batch)
 
         for encoded in encoded_batch:
@@ -123,7 +122,6 @@ def train(
     print("Starting training...\n")
 
     for iter in range(max_iters):
-        # Evaluation
         if iter % EVAL_INTERVAL == 0 or iter == max_iters - 1:
             losses = estimate_loss(
                 model,
@@ -167,7 +165,7 @@ def save_model(
             "token_embedding": token_embedding.state_dict(),
             "pos_encoding": pos_encoding.state_dict(),
             "vocab_size": vocab_size,
-            "d_model": D_MODEL,
+            "dimension_model": DIMENSION_MODEL,
             "seq_len": SEQ_LEN,
         },
         save_path,
@@ -190,9 +188,9 @@ def main():
     train_data, val_data = train_val_split(encoded_texts, 0.9)
 
     # Initialize models
-    token_embedding = TokenEmbedding(vocab_size, D_MODEL, scale=False).to(device)
-    pos_encoding = PositionalEncoding(D_MODEL, max_seq_len=SEQ_LEN).to(device)
-    model = BigramLanguageModel(vocab_size, D_MODEL).to(device)
+    token_embedding = TokenEmbedding(vocab_size, DIMENSION_MODEL, scale=False).to(device)
+    pos_encoding = PositionalEncoding(DIMENSION_MODEL, max_seq_len=SEQ_LEN).to(device)
+    model = BigramLanguageModel(vocab_size, DIMENSION_MODEL).to(device)
     print("Initialize models finished")
 
     total_params = sum(p.numel() for p in model.parameters())
