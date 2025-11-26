@@ -20,7 +20,7 @@ class CharTokenizer(AbstractTokenizer):
         return "".join(self._token_to_char.get(i, "�") for i in tokens)
 
     @classmethod
-    def train(cls, texts: list[str]) -> "CharTokenizer":
+    def train(cls, texts: list[str], **kwargs) -> "CharTokenizer":
         tokenizer = cls()
         all_text = "\n".join(texts)
         chars = sorted(set(all_text))
@@ -40,7 +40,7 @@ class CharTokenizer(AbstractTokenizer):
     def save(self, path: str):
         with open(path, "w") as f:
             json.dump(
-            {
+                {
                     "chars": self._chars,
                     "char_to_token": self._char_to_token,
                     "token_to_char": {str(k): v for k, v in self._token_to_char.items()},
