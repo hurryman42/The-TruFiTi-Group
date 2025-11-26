@@ -5,16 +5,16 @@ import torch
 from src.models.bigram_language_model import BigramLanguageModel
 from src.models.embeddings.positional_encoding import PositionalEncoding
 from src.models.embeddings.token_embedding import TokenEmbedding
-from src.scripts.read_file import read_file
+from src.scripts.read_file import read_file_only_reviews
 from src.tokenizer.char_tokenizer import CharTokenizer
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 D_MODEL = 256
 SEQ_LEN = 128
 BATCH_SIZE = 32
-EVAL_ITERS = 50  # Number of batches to average for loss estimation
+EVAL_ITERS = 50  # number of batches to average for loss estimation
 MAX_ITERS = 3000
-EVAL_INTERVAL = 1000  # Interval of printing estimated loss
+EVAL_INTERVAL = 1000  # interval of printing estimated loss
 LEARNING_RATE = 1e-3
 
 
@@ -27,7 +27,7 @@ def load_char_tokenizer() -> CharTokenizer:
 
 def load_text() -> str:
     input_file = BASE_DIR.parent / "data" / "letterboxd_filtered_short_synopsis_film.jsonl"
-    texts = read_file(input_file)
+    texts = read_file_only_reviews(input_file)
 
     print(f"Number of reviews: {len(texts):,}".replace(",", "."))
     text_string = "\n".join(texts)
@@ -116,7 +116,7 @@ def train(
     print("Starting training...\n")
 
     for iter in range(max_iters):
-        # Evaluation
+        # evaluation
         if iter % EVAL_INTERVAL == 0 or iter == max_iters - 1:
             losses = estimate_loss(
                 model,
@@ -178,11 +178,11 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
     print(f"Using device: {device}\n")
 
-    # Prepare data
+    # prepare data
     encoded_texts = encode_text(text, char_tokenizer)
     train_data, val_data = train_val_split(encoded_texts, 0.9)
 
-    # Initialize models
+    # initialize models
     token_embedding = TokenEmbedding(vocab_size, D_MODEL, scale=False).to(device)
     pos_encoding = PositionalEncoding(D_MODEL, max_seq_len=SEQ_LEN).to(device)
     model = BigramLanguageModel(vocab_size, D_MODEL).to(device)
