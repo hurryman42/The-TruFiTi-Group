@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 
-class AbstractTokenizer(ABC):
+class BaseTokenizer(ABC):
     @abstractmethod
     def encode(self, text: str) -> list[int]:
         pass
@@ -12,7 +12,7 @@ class AbstractTokenizer(ABC):
 
     @classmethod
     @abstractmethod
-    def train(cls, texts: list[str], **kwargs) -> 'AbstractTokenizer':
+    def train(cls, texts: list[str], **kwargs) -> "BaseTokenizer":
         pass
 
     @abstractmethod
@@ -21,7 +21,7 @@ class AbstractTokenizer(ABC):
 
     @classmethod
     @abstractmethod
-    def load(cls, path: str) -> "AbstractTokenizer":
+    def load(cls, path: str) -> "BaseTokenizer":
         pass
 
     @property

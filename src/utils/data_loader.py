@@ -18,6 +18,7 @@ def read_file_only_reviews(file_path) -> list[str]:
 
     return reviews
 
+
 def read_file_synopsis_review_pairs(file_path) -> list[str]:
     pairs = []
     with open(file_path, encoding="utf-8") as f:
@@ -33,7 +34,6 @@ def read_file_synopsis_review_pairs(file_path) -> list[str]:
                 continue
 
             for review in data["review_texts"]:
-                # prepend the synopsis to each review (with a space in-between, change as needed)
                 pairs.append(f"{synopsis} {review}")
 
     print(f"Number of synopsis-review-pairs: {len(pairs):,}".replace(",", "."))
