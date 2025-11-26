@@ -6,7 +6,7 @@ from src.config import TransformerConfig
 from src.enums import TokenizerType
 from src.models.transformer.transformer import TransformerDecoderOnly
 from src.training.trainer import train_loop
-from src.utils.data_loader import read_file_synopsis_review_pairs
+from src.utils.data_loader import read_file_only_reviews
 from src.utils.device import get_device
 from src.utils.encoding import encode_texts
 from src.utils.tokenizer_loader import load_bpe_hugging_face_tokenizer, load_char_tokenizer
@@ -44,6 +44,18 @@ def save_model(model, vocab_size: int, num_params: int, config: TransformerConfi
     print(f"Model saved to {save_path}")
 
 
+def print_training_statistics(config: TransformerConfig, train_data_len: int):
+    tokens_per_iter = config.batch_size * config.seq_len
+    iters_per_epoch = train_data_len // tokens_per_iter
+    print(f"Training tokens: {train_data_len:,}".replace(",", "."))
+    print(
+        f"Tokens per iteration: {tokens_per_iter:,} "
+        f"(batch_size={config.batch_size} × seq_len={config.seq_len})".replace(",", ".")
+    )
+    print(f"Iterations per epoch: {iters_per_epoch:,}".replace(",", "."))
+    print(f"Total epochs: {config.max_iters / iters_per_epoch:.2f}\n")
+
+
 def main(config: TransformerConfig):
     device = get_device()
     print(f"Using device: {device}")
@@ -56,11 +68,13 @@ def main(config: TransformerConfig):
         tokenizer = load_bpe_hugging_face_tokenizer(config.tokenizer_path)
         vocab_size = tokenizer.get_vocab_size()
 
-    texts = read_file_synopsis_review_pairs(config.data_path)
+    texts = read_file_only_reviews(config.data_path)
     encoded = encode_texts(texts, tokenizer, config.tokenizer_type)
     print(f"Total tokens: {len(encoded):,}".replace(",", "."))
 
     train_data, val_data, _ = train_val_test_split(encoded, config.train_size, config.val_size)
+
+    print_training_statistics(config, len(train_data))
 
     model = TransformerDecoderOnly(
         vocab_size,

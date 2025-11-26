@@ -51,10 +51,10 @@ def load_model(model_path: Path):
     model.load_state_dict(checkpoint["model"])
     model.eval()
 
-    return model, tokenizer, tokenizer_type, seq_len, device
+    return model, tokenizer, tokenizer_type, device
 
 
-def generate(model, tokenizer, tokenizer_type, seq_len, device, prompt: str = "", length: int = 200) -> str:
+def generate(model, tokenizer, tokenizer_type, device, prompt: str = "", length: int = 200) -> str:
     if prompt:
         if tokenizer_type == TokenizerType.CHAR:
             idx = torch.tensor(tokenizer.encode(prompt), dtype=torch.long, device=device).unsqueeze(0)
@@ -64,7 +64,7 @@ def generate(model, tokenizer, tokenizer_type, seq_len, device, prompt: str = ""
     else:
         idx = torch.zeros((1, 1), dtype=torch.long, device=device)
 
-    generated = model.generate(idx, length, max_context_len=seq_len)
+    generated = model.generate(idx, length)
 
     if tokenizer_type == TokenizerType.CHAR:
         return tokenizer.decode(generated[0].tolist())
@@ -85,9 +85,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     model_path = BASE_DIR / "models" / args.model
-    model, tokenizer, tokenizer_type, seq_len, device = load_model(model_path)
+    model, tokenizer, tokenizer_type, device = load_model(model_path)
 
     print("=" * 80)
     print(f"Prompt: '{args.prompt}'" if args.prompt else "Unconditional generation:")
     print("=" * 80)
-    print(generate(model, tokenizer, tokenizer_type, seq_len, device, args.prompt, args.length))
+    print(generate(model, tokenizer, tokenizer_type, device, args.prompt, args.length))
