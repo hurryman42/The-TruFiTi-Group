@@ -6,14 +6,14 @@ from tokenizers import Tokenizer
 from src.models.bigram_language_model import BigramLanguageModel
 from src.models.embeddings.positional_encoding import PositionalEncoding
 from src.models.embeddings.token_embedding import TokenEmbedding
-from src.scripts.read_file import read_file
+from src.scripts.read_file import read_file_only_reviews
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DIMENSION_MODEL = 256
 SEQ_LEN = 128
 BATCH_SIZE = 64
 EVAL_ITERS = 50  # Number of batches to average for loss estimation
-MAX_ITERS = 10000
+MAX_ITERS = 3000
 EVAL_INTERVAL = 1000  # Interval of printing estimated loss
 LEARNING_RATE = 1e-3
 
@@ -27,7 +27,7 @@ def load_bpe_tokenizer() -> Tokenizer:
 
 def load_text() -> list:
     input_file = BASE_DIR.parent / "data" / "letterboxd_filtered_short_synopsis_film.jsonl"
-    texts = read_file(input_file)
+    texts = read_file_only_reviews(input_file)
 
     print(f"Number of reviews: {len(texts):,}".replace(",", "."))
     return texts
