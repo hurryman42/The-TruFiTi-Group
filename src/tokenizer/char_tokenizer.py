@@ -1,9 +1,9 @@
 import json
 
-from src.tokenizer.abstract_tokenizer import AbstractTokenizer
+from src.tokenizer.base_tokenizer import BaseTokenizer
 
 
-class CharTokenizer(AbstractTokenizer):
+class CharTokenizer(BaseTokenizer):
     UNKNOWN_TOKEN = "<UNK>"
 
     def __init__(self):

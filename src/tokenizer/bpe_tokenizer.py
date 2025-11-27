@@ -1,10 +1,9 @@
 import json
 
-from src.tokenizer.abstract_tokenizer import AbstractTokenizer
+from src.tokenizer.base_tokenizer import BaseTokenizer
 
 
-class BPETokenizer(AbstractTokenizer):
-
+class BPETokenizer(BaseTokenizer):
     def __init__(self):
         super().__init__()
         self._vocabulary = self._return_base_vocabulary()
@@ -26,7 +25,7 @@ class BPETokenizer(AbstractTokenizer):
         Returns True if list1 is a prefix of list2.
         """
         if len(list1) <= len(list2):
-            return list2[:len(list1)] == list1
+            return list2[: len(list1)] == list1
         else:
             return False
 
@@ -37,8 +36,8 @@ class BPETokenizer(AbstractTokenizer):
         result = []
         i = 0
         while i < len(tokens):
-            if i < len(tokens)-1:
-                if (tokens[i] == rule[0]) and (tokens[i+1] == rule[1]):
+            if i < len(tokens) - 1:
+                if (tokens[i] == rule[0]) and (tokens[i + 1] == rule[1]):
                     result.append(rule[2])
                     i += 2
                 else:
@@ -77,24 +76,25 @@ class BPETokenizer(AbstractTokenizer):
         return len(self._vocabulary)
 
     @classmethod
-    def train(cls, texts: list[str], **kwargs) -> 'BPETokenizer':
+    def train(cls, texts: list[str], **kwargs) -> "BPETokenizer":
         target_size = kwargs.get("target_size", 1000)
 
         tokenizer = cls()
 
-        all_text = str()
+        all_text = ""
         for text in texts:
             for i in range(len(text)):
                 all_text += text[i]
 
         all_text = tokenizer.encode(all_text)
 
-        for i in range(len(tokenizer._vocabulary), target_size):
-
+        for _ in range(len(tokenizer._vocabulary), target_size):
             counter = {}
 
             for j in range(len(all_text) - 1):
-                pair = str(all_text[j]) + "-" + str(all_text[j + 1])  #necessary because lists are not hashable in Python
+                pair = (
+                    str(all_text[j]) + "-" + str(all_text[j + 1])
+                )  # necessary because lists are not hashable in Python
                 if pair in counter:
                     counter[pair] += 1
                 else:
@@ -119,33 +119,29 @@ class BPETokenizer(AbstractTokenizer):
         return tokenizer
 
     def save(self, path: str):
-
         # bytes not JSON serializable, hence decoding bytes first
         temp_vocabulary = dict()
         for key, value in self._vocabulary.items():
             temp_vocabulary[key] = value.decode("utf-8", errors="replace")
 
-        with open(path, 'w') as f:
+        with open(path, "w") as f:
             json.dump(
-                {
-                    'vocabulary': temp_vocabulary,
-                    'merge_rules': self._merge_rules
-                },
+                {"vocabulary": temp_vocabulary, "merge_rules": self._merge_rules},
                 f,
             )
 
     @classmethod
-    def load(cls, path: str) -> 'BPETokenizer':
+    def load(cls, path: str) -> "BPETokenizer":
         tokenizer = cls()
-        with open(path, 'r') as f:
+        with open(path) as f:
             data = json.load(f)
 
             # bytes not JSON serializable, so encoding into bytes necessary
             new_vocabulary = dict()
-            temp_vocabulary = data['vocabulary']
+            temp_vocabulary = data["vocabulary"]
             for key, value in temp_vocabulary.items():
                 new_vocabulary[int(key)] = value.encode("utf-8")
 
             tokenizer._vocabulary = new_vocabulary
-            tokenizer._merge_rules = data['merge_rules']
+            tokenizer._merge_rules = data["merge_rules"]
         return tokenizer
