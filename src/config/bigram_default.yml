@@ -1,0 +1,20 @@
+model:
+  type: bigram
+  d_model: 256
+  seq_len: 128
+
+tokenizer:
+  type: bpe_hugging_face
+
+training:
+  batch_size: 64
+  learning_rate: 0.001
+  max_iters: 3000
+  eval_interval: 1000
+  eval_iters: 50
+
+data:
+  train_size: 0.9
+  val_size: 0.1
+  file: letterboxd_filtered_short_synopsis_film.jsonl
+

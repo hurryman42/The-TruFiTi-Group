@@ -3,7 +3,7 @@ from pathlib import Path
 
 import torch
 
-from src.enums import TokenizerType
+from src.enums import CheckpointEnum, TokenizerTypeEnum
 from src.models.bigram_language_model import BigramLanguageModel
 from src.models.embeddings.positional_encoding import PositionalEncoding
 from src.models.embeddings.token_embedding import TokenEmbedding
@@ -19,32 +19,37 @@ def load_model(model_path: Path):
 
     checkpoint = torch.load(model_path, map_location=device)
 
-    tokenizer_type = TokenizerType(checkpoint["tokenizer_type"])
-    vocab_size = checkpoint["vocab_size"]
-    d_model = checkpoint["d_model"]
-    seq_len = checkpoint["seq_len"]
+    tokenizer_type = TokenizerTypeEnum(checkpoint[CheckpointEnum.TOKENIZER_TYPE])
 
-    print(f"Tokenizer: {tokenizer_type.value}")
-    print(f"Vocab size: {vocab_size}, d_model: {d_model}, seq_len: {seq_len}\n")
+    print(f"Tokenizer: {tokenizer_type}")
+    print(
+        f"Vocab size: {checkpoint[CheckpointEnum.VOCAB_SIZE]}, "
+        f"d_model: {checkpoint[CheckpointEnum.D_MODEL]}, "
+        f"seq_len: {checkpoint[CheckpointEnum.SEQ_LEN]}\n"
+    )
 
-    if tokenizer_type == TokenizerType.CHAR:
+    if tokenizer_type == TokenizerTypeEnum.CHAR:
         tokenizer_path = BASE_DIR / "tokenizer" / "char_tokenizer.json"
         tokenizer = load_char_tokenizer(tokenizer_path)
     else:
         tokenizer_path = BASE_DIR / "tokenizer" / "bpe_hugging_face_tokenizer.json"
         tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
 
-    token_embedding = TokenEmbedding(vocab_size, d_model, scale=False).to(device)
-    pos_encoding = PositionalEncoding(d_model, max_seq_len=seq_len).to(device)
-    model = BigramLanguageModel(vocab_size, d_model).to(device)
+    token_embedding = TokenEmbedding(
+        checkpoint[CheckpointEnum.VOCAB_SIZE], checkpoint[CheckpointEnum.D_MODEL], scale=False
+    ).to(device)
+    pos_encoding = PositionalEncoding(
+        checkpoint[CheckpointEnum.D_MODEL], max_seq_len=checkpoint[CheckpointEnum.SEQ_LEN]
+    ).to(device)
+    model = BigramLanguageModel(checkpoint[CheckpointEnum.VOCAB_SIZE], checkpoint[CheckpointEnum.D_MODEL]).to(device)
 
-    token_embedding.load_state_dict(checkpoint["token_embedding"])
-    pos_encoding.load_state_dict(checkpoint["pos_encoding"])
-    model.load_state_dict(checkpoint["model"])
+    token_embedding.load_state_dict(checkpoint[CheckpointEnum.TOKEN_EMBEDDING])
+    pos_encoding.load_state_dict(checkpoint[CheckpointEnum.POS_ENCODING])
+    model.load_state_dict(checkpoint[CheckpointEnum.MODEL])
 
     model.eval()
 
-    return model, token_embedding, pos_encoding, tokenizer, tokenizer_type, seq_len, device
+    return model, token_embedding, pos_encoding, tokenizer, tokenizer_type, checkpoint[CheckpointEnum.SEQ_LEN], device
 
 
 def generate(
@@ -59,7 +64,7 @@ def generate(
     length: int = 200,
 ) -> str:
     if prompt:
-        if tokenizer_type == TokenizerType.CHAR:
+        if tokenizer_type == TokenizerTypeEnum.CHAR:
             idx = torch.tensor(tokenizer.encode(prompt), dtype=torch.long, device=device).unsqueeze(0)
         else:
             encoded = tokenizer.encode(prompt)
@@ -69,19 +74,14 @@ def generate(
 
     result = model.generate(token_embedding, pos_encoding, idx, length, max_context_len=seq_len)
 
-    if tokenizer_type == TokenizerType.CHAR:
+    if tokenizer_type == TokenizerTypeEnum.CHAR:
         return tokenizer.decode(result[0].tolist())
     return tokenizer.decode(result[0].tolist())
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate text with Bigram Language Model")
-    parser.add_argument(
-        "--model",
-        type=str,
-        default="bigram_model_bpe_hugging_face.pt",
-        help="Model filename (default: bigram_model_bpe_hugging_face.pt)",
-    )
+    parser.add_argument("--model", type=str, default="bigram_model_bpe_hugging_face.pt", help="Model filename")
     parser.add_argument("--prompt", type=str, default="", help="Prompt for generation")
     parser.add_argument("--length", type=int, default=200, help="Number of tokens to generate")
 

@@ -1,0 +1,24 @@
+model:
+  type: transformer
+  d_model: 256
+  num_heads: 8
+  num_blocks: 6
+  seq_len: 128
+  dropout: 0.1
+
+tokenizer:
+  type: bpe_hugging_face
+
+training:
+  batch_size: 32
+  learning_rate: 0.001
+  weight_decay: 0.0
+  max_iters: 3000
+  eval_interval: 1000
+  eval_iters: 20
+
+data:
+  train_size: 0.9
+  val_size: 0.1
+  file: letterboxd_filtered_short_synopsis_film.jsonl
+

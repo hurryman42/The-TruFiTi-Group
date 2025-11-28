@@ -3,7 +3,7 @@ from pathlib import Path
 
 import torch
 
-from src.enums import TokenizerType
+from src.enums import CheckpointEnum, TokenizerTypeEnum
 from src.models.transformer.transformer import TransformerDecoderOnly
 from src.utils.device import get_device
 from src.utils.tokenizer_loader import load_bpe_hugging_face_tokenizer, load_char_tokenizer
@@ -17,20 +17,17 @@ def load_model(model_path: Path):
 
     checkpoint = torch.load(model_path, map_location=device)
 
-    tokenizer_type = TokenizerType(checkpoint["tokenizer_type"])
-    vocab_size = checkpoint["vocab_size"]
-    d_model = checkpoint["d_model"]
-    seq_len = checkpoint["seq_len"]
-    num_heads = checkpoint["num_heads"]
-    num_blocks = checkpoint["num_blocks"]
-    ff_hidden_dim = checkpoint["ff_hidden_dim"]
-    dropout = checkpoint["dropout"]
+    tokenizer_type = TokenizerTypeEnum(checkpoint[CheckpointEnum.TOKENIZER_TYPE])
 
-    print(f"Tokenizer: {tokenizer_type.value}")
-    print(f"Vocab size: {vocab_size}, d_model: {d_model}, seq_len: {seq_len}")
-    print(f"Blocks: {num_blocks}, Heads: {num_heads}\n")
+    print(f"Tokenizer: {tokenizer_type}")
+    print(
+        f"Vocab size: {checkpoint[CheckpointEnum.VOCAB_SIZE]}, "
+        f"d_model: {checkpoint[CheckpointEnum.D_MODEL]}, "
+        f"seq_len: {checkpoint[CheckpointEnum.SEQ_LEN]}\n"
+    )
+    print(f"Blocks: {checkpoint[CheckpointEnum.NUM_BLOCKS]}, Heads: {checkpoint[CheckpointEnum.NUM_HEADS]}\n")
 
-    if tokenizer_type == TokenizerType.CHAR:
+    if tokenizer_type == TokenizerTypeEnum.CHAR:
         tokenizer_path = BASE_DIR / "tokenizer" / "char_tokenizer.json"
         tokenizer = load_char_tokenizer(tokenizer_path)
     else:
@@ -38,17 +35,17 @@ def load_model(model_path: Path):
         tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
 
     model = TransformerDecoderOnly(
-        vocab_size,
-        embedding_dimension=d_model,
-        num_blocks=num_blocks,
-        num_heads=num_heads,
-        head_dimension=d_model // num_heads,
-        max_seq_len=seq_len,
-        ff_hidden_dimension=ff_hidden_dim,
-        dropout=dropout,
+        checkpoint[CheckpointEnum.VOCAB_SIZE],
+        embedding_dimension=checkpoint[CheckpointEnum.D_MODEL],
+        num_blocks=checkpoint[CheckpointEnum.NUM_BLOCKS],
+        num_heads=checkpoint[CheckpointEnum.NUM_HEADS],
+        head_dimension=checkpoint[CheckpointEnum.D_MODEL] // checkpoint[CheckpointEnum.NUM_HEADS],
+        max_seq_len=checkpoint[CheckpointEnum.SEQ_LEN],
+        ff_hidden_dimension=checkpoint[CheckpointEnum.FF_HIDDEN_DIM],
+        dropout=checkpoint[CheckpointEnum.DROPOUT],
     ).to(device)
 
-    model.load_state_dict(checkpoint["model"])
+    model.load_state_dict(checkpoint[CheckpointEnum.MODEL])
     model.eval()
 
     return model, tokenizer, tokenizer_type, device
@@ -56,7 +53,7 @@ def load_model(model_path: Path):
 
 def generate(model, tokenizer, tokenizer_type, device, prompt: str = "", length: int = 200) -> str:
     if prompt:
-        if tokenizer_type == TokenizerType.CHAR:
+        if tokenizer_type == TokenizerTypeEnum.CHAR:
             idx = torch.tensor(tokenizer.encode(prompt), dtype=torch.long, device=device).unsqueeze(0)
         else:
             encoded = tokenizer.encode(prompt)
@@ -66,19 +63,14 @@ def generate(model, tokenizer, tokenizer_type, device, prompt: str = "", length:
 
     generated = model.generate(idx, length)
 
-    if tokenizer_type == TokenizerType.CHAR:
+    if tokenizer_type == TokenizerTypeEnum.CHAR:
         return tokenizer.decode(generated[0].tolist())
     return tokenizer.decode(generated[0].tolist())
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate text with Transformer Language Model")
-    parser.add_argument(
-        "--model",
-        type=str,
-        required=True,
-        help="Model filename (e.g. transformer_4.8m.pt)",
-    )
+    parser.add_argument("--model", type=str, required=True, help="Model filename")
     parser.add_argument("--prompt", type=str, default="", help="Prompt for generation")
     parser.add_argument("--length", type=int, default=200, help="Number of tokens to generate")
 
