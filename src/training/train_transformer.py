@@ -47,21 +47,20 @@ def save_model(model, vocab_size: int, num_params: int, config: dict):
     model_cfg = config[SectionEnum.MODEL]
     tokenizer_type = get_tokenizer_type(config)
 
-    torch.save(
-        {
-            CheckpointEnum.MODEL: model.state_dict(),
-            CheckpointEnum.NUM_PARAMS: num_params,
-            CheckpointEnum.VOCAB_SIZE: vocab_size,
-            CheckpointEnum.D_MODEL: model_cfg[TransformerModelEnum.D_MODEL],
-            CheckpointEnum.SEQ_LEN: model_cfg[TransformerModelEnum.SEQ_LEN],
-            CheckpointEnum.NUM_HEADS: model_cfg[TransformerModelEnum.NUM_HEADS],
-            CheckpointEnum.NUM_BLOCKS: model_cfg[TransformerModelEnum.NUM_BLOCKS],
-            CheckpointEnum.FF_HIDDEN_DIM: model_cfg[TransformerModelEnum.FF_HIDDEN_DIM],
-            CheckpointEnum.DROPOUT: model_cfg[TransformerModelEnum.DROPOUT],
-            CheckpointEnum.TOKENIZER_TYPE: tokenizer_type,
-        },
-        save_path,
-    )
+    checkpoint = {
+        CheckpointEnum.MODEL: model.state_dict(),
+        CheckpointEnum.NUM_PARAMS: num_params,
+        CheckpointEnum.VOCAB_SIZE: vocab_size,
+        CheckpointEnum.D_MODEL: model_cfg[TransformerModelEnum.D_MODEL],
+        CheckpointEnum.SEQ_LEN: model_cfg[TransformerModelEnum.SEQ_LEN],
+        CheckpointEnum.NUM_HEADS: model_cfg[TransformerModelEnum.NUM_HEADS],
+        CheckpointEnum.NUM_BLOCKS: model_cfg[TransformerModelEnum.NUM_BLOCKS],
+        CheckpointEnum.FF_HIDDEN_DIM: model_cfg[TransformerModelEnum.FF_HIDDEN_DIM],
+        CheckpointEnum.DROPOUT: model_cfg[TransformerModelEnum.DROPOUT],
+        CheckpointEnum.TOKENIZER_TYPE: str(tokenizer_type),
+    }
+
+    torch.save({str(k): v for k, v in checkpoint.items()}, save_path)
     print(f"Model saved to {save_path}")
 
     return save_path
@@ -69,7 +68,7 @@ def save_model(model, vocab_size: int, num_params: int, config: dict):
 
 def save_metrics(metrics: TrainingMetrics, num_params: int):
     params_millions = num_params / 1_000_000
-    metrics_path = MODEL_DIR / f"transformer_{params_millions:.1f}m_metrics.json"
+    metrics_path = MODEL_DIR / f"transformer_{params_millions:.1f}M_metrics.json"
 
     with open(metrics_path, "w") as f:
         json.dump(
@@ -176,7 +175,7 @@ def main(config: dict):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train Transformer Language Model")
-    parser.add_argument("config", type=str, help="Config file path")
+    parser.add_argument("config", type=str, default="transformer_default", help="Config file path")
 
     args = parser.parse_args()
 

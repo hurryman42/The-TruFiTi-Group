@@ -73,4 +73,4 @@ def get_model_save_path(config: dict[str, Any], num_params: int) -> Path:
             return MODEL_DIR / "bigram_model_bpe_hugging_face.pt"
         return MODEL_DIR / "bigram_model.pt"
 
-    return MODEL_DIR / f"transformer_{params_millions:.1f}m.pt"
+    return MODEL_DIR / f"transformer_{params_millions:.1f}M.pt"

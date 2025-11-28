@@ -46,18 +46,18 @@ def save_model(model, token_embedding, pos_encoding, vocab_size: int, config: di
     save_path.parent.mkdir(parents=True, exist_ok=True)
 
     model_cfg = config[SectionEnum.MODEL]
-    torch.save(
-        {
-            CheckpointEnum.MODEL: model.state_dict(),
-            CheckpointEnum.TOKEN_EMBEDDING: token_embedding.state_dict(),
-            CheckpointEnum.POS_ENCODING: pos_encoding.state_dict(),
-            CheckpointEnum.VOCAB_SIZE: vocab_size,
-            CheckpointEnum.D_MODEL: model_cfg[BigramModelEnum.D_MODEL],
-            CheckpointEnum.SEQ_LEN: model_cfg[BigramModelEnum.SEQ_LEN],
-            CheckpointEnum.TOKENIZER_TYPE: tokenizer_type,
-        },
-        save_path,
-    )
+
+    checkpoint = {
+        CheckpointEnum.MODEL: model.state_dict(),
+        CheckpointEnum.TOKEN_EMBEDDING: token_embedding.state_dict(),
+        CheckpointEnum.POS_ENCODING: pos_encoding.state_dict(),
+        CheckpointEnum.VOCAB_SIZE: vocab_size,
+        CheckpointEnum.D_MODEL: model_cfg[BigramModelEnum.D_MODEL],
+        CheckpointEnum.SEQ_LEN: model_cfg[BigramModelEnum.SEQ_LEN],
+        CheckpointEnum.TOKENIZER_TYPE: str(tokenizer_type),
+    }
+
+    torch.save({str(k): v for k, v in checkpoint.items()}, save_path)
     print(f"Model saved to {save_path}")
 
     return save_path
