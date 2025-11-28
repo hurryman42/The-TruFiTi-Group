@@ -7,7 +7,7 @@ DOWNLOAD_URL := https://huggingface.co/datasets/pkchwy/letterboxd-all-movie-data
 
 MIN_SYNOPSIS_WORDS ?= 10
 MAX_EMOJIS ?= 5
-MAX_NON_LATIN_CHARS ?= 20
+MAX_NON_LATIN_CHARS ?= 0
 
 data: check-deps download-data verify-download run-filter-film clean
 
@@ -40,7 +40,7 @@ run-filter-%: $(SRC_FILE)
 	@echo "  min synopsis words: $(MIN_SYNOPSIS_WORDS)"
 	@echo "  max emojis: $(MAX_EMOJIS)"
 	@echo "  max non-Latin chars: $(MAX_NON_LATIN_CHARS)"
-	@poetry run python $(SRC_FILE) $* $(DATA_FILE) --min-synopsis-words $(MIN_SYNOPSIS_WORDS) --max-emojis $(MAX_EMOJIS) --max-non-latin-chars $(MAX_NON_LATIN_CHARS)
+	@uv run python $(SRC_FILE) $* $(DATA_FILE) --min-synopsis-words $(MIN_SYNOPSIS_WORDS) --max-emojis $(MAX_EMOJIS) --max-non-latin-chars $(MAX_NON_LATIN_CHARS)
 	@echo "\033[0;32mData filter ($*) completed successfully.\033[0m"
 
 clean:
@@ -51,4 +51,4 @@ clean:
 .PHONY: all check-deps run-filter clean
 
 test:
-	poetry run pytest
+	uv run pytest

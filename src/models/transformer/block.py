@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 from src.models.transformer.attention import MultiHeadAttention
 from src.models.transformer.feed_forward import FeedForward
