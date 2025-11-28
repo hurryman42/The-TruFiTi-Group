@@ -78,12 +78,18 @@ def train_loop(
                 losses = estimate_loss(model, forward_pass, data, seq_len, batch_size, eval_iters, device)
                 metrics.add(step, losses[DataSplitEnum.TRAIN], losses[DataSplitEnum.VAL])
 
-                print(
-                    f"Step {step}: "
-                    f"train loss {losses[DataSplitEnum.TRAIN]:.4f} (ppl {math.exp(losses[DataSplitEnum.TRAIN]):.2f}), "
-                    f"val loss {losses[DataSplitEnum.VAL]:.4f} (ppl {math.exp(losses[DataSplitEnum.VAL]):.2f})"
-                )
+                #print(
+                #    f"Step {step}: "
+                #    f"train loss {losses[DataSplitEnum.TRAIN]:.4f} (ppl {math.exp(losses[DataSplitEnum.TRAIN]):.2f}), "
+                #    f"val loss {losses[DataSplitEnum.VAL]:.4f} (ppl {math.exp(losses[DataSplitEnum.VAL]):.2f})"
+                #)
                 pbar.set_postfix(train_loss=losses[DataSplitEnum.TRAIN], val_loss=losses[DataSplitEnum.VAL])
+                if wandb_run is not None:
+                    wandb_run.log({
+                        "train_loss": losses[DataSplitEnum.TRAIN],
+                        "val_loss": losses[DataSplitEnum.VAL],
+                        "step": step,
+                    })
 
             # training step
             x, y = get_batch(data[DataSplitEnum.TRAIN], seq_len, batch_size, device)
@@ -93,10 +99,10 @@ def train_loop(
             loss.backward()
             optimizer.step()
 
+            pbar.set_postfix(train_loss=loss.item())
             if wandb_run is not None:
                 wandb_run.log({
-                    "train_loss": losses[DataSplitEnum.TRAIN],
-                    "val_loss": losses[DataSplitEnum.VAL],
+                    "train_loss": loss.item(),
                     "step": step,
                 })
 

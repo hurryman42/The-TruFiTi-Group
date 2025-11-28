@@ -54,6 +54,9 @@ This will:
 #### Troubleshooting
 If you see errors about `curl` or `python3` missing, please install them using your package manager (e.g., `sudo apt install curl python3` on Ubuntu, or `brew install curl python` on macOS with Homebrew).
 
+### Just Data Filter
+``
+
 ### Training
 `uv run -m src.training.train_transformer [CONFIG]`
 where `[CONFIG]` could be `transformer_default`

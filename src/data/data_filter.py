@@ -167,6 +167,7 @@ def main():
     print(f"Reviews before filtering: {total_reviews}")
     print(f"Films after filtering: {filtered_films}")
     print(f"Reviews after filtering: {filtered_reviews}")
+    print(f"Saved to {output_file}")
 
 
 if __name__ == "__main__":
