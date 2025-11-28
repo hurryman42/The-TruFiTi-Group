@@ -6,9 +6,6 @@ from src.generation.generate_transformer import load_model, generate
 
 BASE_DIR = Path(__file__).parent.parent.parent
 MODEL_PATH = BASE_DIR / "models" / "transformer_6.8M.pt"
-print("BASE_DIR:", BASE_DIR)
-print("Tokenizer file exists?", (BASE_DIR / "tokenizer" / "bpe_hugging_face_tokenizer.json").exists())
-model, tokenizer, tokenizer_type, device = load_model(MODEL_PATH)
 
 
 def review_from_synopsis(synopsis):
@@ -25,6 +22,8 @@ def review_from_synopsis(synopsis):
 
 
 if __name__ == "__main__":
+    model, tokenizer, tokenizer_type, device = load_model(MODEL_PATH)
+
     custom_css = """
     body, .gradio-container {
         background: #14181C !important;
@@ -124,7 +123,7 @@ if __name__ == "__main__":
 
         generate_button.click(
             review_from_synopsis,
-            inputs=[synopsis_input, stars_hidden],
+            inputs=synopsis_input,
             outputs=generated_review
         )
 

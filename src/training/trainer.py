@@ -99,12 +99,5 @@ def train_loop(
             loss.backward()
             optimizer.step()
 
-            pbar.set_postfix(train_loss=loss.item())
-            if wandb_run is not None:
-                wandb_run.log({
-                    "train_loss": loss.item(),
-                    "step": step,
-                })
-
     print("\nTraining completed!")
     return metrics
