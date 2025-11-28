@@ -106,7 +106,7 @@ def main(config: dict):
     wandb.init(
         project="film-critic-lm",
         entity="the-trufiti-group",
-        config=config.__dict__,
+        config=config,
     )
 
     device = get_device()

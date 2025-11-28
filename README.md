@@ -51,8 +51,18 @@ This will:
 2. Download the data file into `data/letterboxd_full.jsonl`.
 3. Run `src/data-filter.py`.
 
-### Troubleshooting
+#### Troubleshooting
 If you see errors about `curl` or `python3` missing, please install them using your package manager (e.g., `sudo apt install curl python3` on Ubuntu, or `brew install curl python` on macOS with Homebrew).
+
+### Training
+`uv run -m src.training.train_transformer [CONFIG]`
+where `[CONFIG]` could be `transformer_default`
+
+### Generation using trained model
+`uv run -m src.generation.generate_transformer --model transformer_6.8M.pt --prompt "good movie because"`
+
+### Demo
+work in progress!
 
 ---
 
