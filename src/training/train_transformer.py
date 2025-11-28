@@ -1,11 +1,29 @@
 import argparse
+import json
 
 import torch
 
-from src.config import TransformerConfig
-from src.enums import TokenizerType
+from src.config import (
+    MODEL_DIR,
+    get_data_path,
+    get_model_save_path,
+    get_model_type,
+    get_tokenizer_path,
+    get_tokenizer_type,
+    load_config,
+)
+from src.enums import (
+    CheckpointEnum,
+    DataConfigEnum,
+    DataSplitEnum,
+    ModelTypeEnum,
+    SectionEnum,
+    TokenizerTypeEnum,
+    TrainingEnum,
+    TransformerModelEnum,
+)
 from src.models.transformer.transformer import TransformerDecoderOnly
-from src.training.trainer import train_loop
+from src.training.trainer import TrainingMetrics, train_loop
 from src.utils.data_loader import read_file_only_reviews
 from src.utils.device import get_device
 from src.utils.encoding import encode_texts
@@ -22,125 +40,149 @@ def create_forward_pass():
     return forward_pass
 
 
-def save_model(model, vocab_size: int, num_params: int, config: TransformerConfig):
-    save_path = config.get_model_save_path(num_params)
+def save_model(model, vocab_size: int, num_params: int, config: dict):
+    save_path = get_model_save_path(config, num_params)
     save_path.parent.mkdir(parents=True, exist_ok=True)
 
-    torch.save(
-        {
-            "model": model.state_dict(),
-            "num_params": num_params,
-            "vocab_size": vocab_size,
-            "d_model": config.d_model,
-            "seq_len": config.seq_len,
-            "num_heads": config.num_heads,
-            "num_blocks": config.num_blocks,
-            "ff_hidden_dim": config.ff_hidden_dim,
-            "dropout": config.dropout,
-            "tokenizer_type": config.tokenizer_type.value,
-        },
-        save_path,
-    )
+    model_cfg = config[SectionEnum.MODEL]
+    tokenizer_type = get_tokenizer_type(config)
+
+    checkpoint = {
+        CheckpointEnum.MODEL: model.state_dict(),
+        CheckpointEnum.NUM_PARAMS: num_params,
+        CheckpointEnum.VOCAB_SIZE: vocab_size,
+        CheckpointEnum.D_MODEL: model_cfg[TransformerModelEnum.D_MODEL],
+        CheckpointEnum.SEQ_LEN: model_cfg[TransformerModelEnum.SEQ_LEN],
+        CheckpointEnum.NUM_HEADS: model_cfg[TransformerModelEnum.NUM_HEADS],
+        CheckpointEnum.NUM_BLOCKS: model_cfg[TransformerModelEnum.NUM_BLOCKS],
+        CheckpointEnum.FF_HIDDEN_DIM: model_cfg[TransformerModelEnum.FF_HIDDEN_DIM],
+        CheckpointEnum.DROPOUT: model_cfg[TransformerModelEnum.DROPOUT],
+        CheckpointEnum.TOKENIZER_TYPE: str(tokenizer_type),
+    }
+
+    torch.save({str(k): v for k, v in checkpoint.items()}, save_path)
     print(f"Model saved to {save_path}")
 
+    return save_path
 
-def print_training_statistics(config: TransformerConfig, train_data_len: int):
-    tokens_per_iter = config.batch_size * config.seq_len
+
+def save_metrics(metrics: TrainingMetrics, num_params: int):
+    params_millions = num_params / 1_000_000
+    metrics_path = MODEL_DIR / f"transformer_{params_millions:.1f}M_metrics.json"
+
+    with open(metrics_path, "w") as f:
+        json.dump(
+            {
+                "steps": metrics.steps,
+                "train_loss": metrics.train_loss,
+                "val_loss": metrics.val_loss,
+                "train_perplexity": metrics.train_perplexity,
+                "val_perplexity": metrics.val_perplexity,
+            },
+            f,
+            indent=2,
+        )
+
+    print(f"Metrics saved to {metrics_path}")
+
+
+def print_training_statistics(config: dict, train_data_len: int):
+    model_cfg = config[SectionEnum.MODEL]
+    training_cfg = config[SectionEnum.TRAINING]
+
+    batch_size = training_cfg[TrainingEnum.BATCH_SIZE]
+    seq_len = model_cfg[TransformerModelEnum.SEQ_LEN]
+    max_iters = training_cfg[TrainingEnum.MAX_ITERS]
+
+    tokens_per_iter = batch_size * seq_len
     iters_per_epoch = train_data_len // tokens_per_iter
     print(f"Training tokens: {train_data_len:,}".replace(",", "."))
-    print(
-        f"Tokens per iteration: {tokens_per_iter:,} "
-        f"(batch_size={config.batch_size} × seq_len={config.seq_len})".replace(",", ".")
-    )
+    print(f"Tokens per iteration: {tokens_per_iter:,} (batch_size={batch_size} × seq_len={seq_len})".replace(",", "."))
     print(f"Iterations per epoch: {iters_per_epoch:,}".replace(",", "."))
-    print(f"Total epochs: {config.max_iters / iters_per_epoch:.2f}\n")
+    print(f"Total epochs: {max_iters / iters_per_epoch:.2f}\n")
 
 
-def main(config: TransformerConfig):
+def main(config: dict):
     device = get_device()
-    print(f"Using device: {device}")
-    print(f"Tokenizer: {config.tokenizer_type.value}\n")
+    tokenizer_type = get_tokenizer_type(config)
+    tokenizer_path = get_tokenizer_path(config)
 
-    if config.tokenizer_type == TokenizerType.CHAR:
-        tokenizer = load_char_tokenizer(config.tokenizer_path)
+    print(f"Using device: {device}")
+    print(f"Tokenizer: {tokenizer_type}\n")
+
+    if tokenizer_type == TokenizerTypeEnum.CHAR:
+        tokenizer = load_char_tokenizer(tokenizer_path)
         vocab_size = tokenizer.get_vocab_size
     else:
-        tokenizer = load_bpe_hugging_face_tokenizer(config.tokenizer_path)
+        tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
         vocab_size = tokenizer.get_vocab_size()
 
-    texts = read_file_only_reviews(config.data_path)
-    encoded = encode_texts(texts, tokenizer, config.tokenizer_type)
+    data_path = get_data_path(config)
+    texts = read_file_only_reviews(data_path)
+    encoded = encode_texts(texts, tokenizer, tokenizer_type)
     print(f"Total tokens: {len(encoded):,}".replace(",", "."))
 
-    train_data, val_data, _ = train_val_test_split(encoded, config.train_size, config.val_size)
+    data_cfg = config[SectionEnum.DATA]
+    train_data, val_data, _ = train_val_test_split(
+        encoded,
+        data_cfg[DataConfigEnum.TRAIN_SIZE],
+        data_cfg[DataConfigEnum.VAL_SIZE],
+    )
 
     print_training_statistics(config, len(train_data))
 
+    model_cfg = config[SectionEnum.MODEL]
     model = TransformerDecoderOnly(
         vocab_size,
-        embedding_dimension=config.d_model,
-        num_blocks=config.num_blocks,
-        num_heads=config.num_heads,
-        head_dimension=config.head_dim,
-        max_seq_len=config.seq_len,
-        ff_hidden_dimension=config.ff_hidden_dim,
-        dropout=config.dropout,
+        embedding_dimension=model_cfg[TransformerModelEnum.D_MODEL],
+        num_blocks=model_cfg[TransformerModelEnum.NUM_BLOCKS],
+        num_heads=model_cfg[TransformerModelEnum.NUM_HEADS],
+        head_dimension=model_cfg[TransformerModelEnum.HEAD_DIM],
+        max_seq_len=model_cfg[TransformerModelEnum.SEQ_LEN],
+        ff_hidden_dimension=model_cfg[TransformerModelEnum.FF_HIDDEN_DIM],
+        dropout=model_cfg[TransformerModelEnum.DROPOUT],
     ).to(device)
 
     num_params = sum(p.numel() for p in model.parameters())
     print(f"Model parameters: {num_params:,} ({num_params/1_000_000:.1f}M)\n".replace(",", "."))
 
+    training_cfg = config[SectionEnum.TRAINING]
     optimizer = torch.optim.AdamW(
         model.parameters(),
-        lr=config.learning_rate,
-        weight_decay=config.weight_decay,
+        lr=training_cfg[TrainingEnum.LEARNING_RATE],
+        weight_decay=training_cfg[TrainingEnum.WEIGHT_DECAY],
     )
 
     forward_pass = create_forward_pass()
 
-    train_loop(
+    data = {DataSplitEnum.TRAIN: train_data, DataSplitEnum.VAL: val_data}
+    metrics = train_loop(
         model,
         forward_pass,
-        train_data,
-        val_data,
+        data,
         optimizer,
-        config.seq_len,
-        config.batch_size,
-        config.max_iters,
-        config.eval_interval,
-        config.eval_iters,
+        model_cfg[TransformerModelEnum.SEQ_LEN],
+        training_cfg[TrainingEnum.BATCH_SIZE],
+        training_cfg[TrainingEnum.MAX_ITERS],
+        training_cfg[TrainingEnum.EVAL_INTERVAL],
+        training_cfg[TrainingEnum.EVAL_ITERS],
         device,
     )
 
     save_model(model, vocab_size, num_params, config)
+    save_metrics(metrics, num_params)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train Transformer Language Model")
-    parser.add_argument(
-        "--tokenizer",
-        type=str,
-        choices=["bpe", "char"],
-        default="bpe",
-        help="Tokenizer type: 'bpe' (default) or 'char'",
-    )
-    parser.add_argument("--num-blocks", type=int, help="Number of transformer blocks")
-    parser.add_argument("--num-heads", type=int, help="Number of attention heads")
-    parser.add_argument("--max-iters", type=int, help="Maximum training iterations")
-    parser.add_argument("--batch-size", type=int, help="Batch size")
+    parser.add_argument("config", type=str, default="transformer_default", help="Config file path")
 
     args = parser.parse_args()
 
-    tokenizer_type = TokenizerType.BPE_HUGGING_FACE if args.tokenizer == "bpe" else TokenizerType.CHAR
-    config = TransformerConfig(tokenizer_type=tokenizer_type)
+    config = load_config(args.config)
+    print(f"Loading config: {args.config}\n")
 
-    if args.num_blocks:
-        config.num_blocks = args.num_blocks
-    if args.num_heads:
-        config.num_heads = args.num_heads
-    if args.max_iters:
-        config.max_iters = args.max_iters
-    if args.batch_size:
-        config.batch_size = args.batch_size
+    if get_model_type(config) != ModelTypeEnum.TRANSFORMER:
+        raise ValueError(f"Config '{args.config}' is not a transformer config")
 
     main(config)

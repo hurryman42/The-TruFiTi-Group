@@ -1,13 +1,23 @@
 import argparse
+import json
 
 import torch
 
-from src.config import BigramConfig
-from src.enums import TokenizerType
+from src.config import MODEL_DIR, get_data_path, get_model_type, get_tokenizer_path, get_tokenizer_type, load_config
+from src.enums import (
+    BigramModelEnum,
+    CheckpointEnum,
+    DataConfigEnum,
+    DataSplitEnum,
+    ModelTypeEnum,
+    SectionEnum,
+    TokenizerTypeEnum,
+    TrainingEnum,
+)
 from src.models.bigram_language_model import BigramLanguageModel
 from src.models.embeddings.positional_encoding import PositionalEncoding
 from src.models.embeddings.token_embedding import TokenEmbedding
-from src.training.trainer import train_loop
+from src.training.trainer import TrainingMetrics, train_loop
 from src.utils.data_loader import read_file_only_reviews
 from src.utils.device import get_device
 from src.utils.encoding import encode_texts
@@ -25,92 +35,130 @@ def create_forward_pass(token_embedding, pos_encoding):
     return forward_pass
 
 
-def save_model(model, token_embedding, pos_encoding, vocab_size: int, config: BigramConfig):
-    config.model_save_path.parent.mkdir(parents=True, exist_ok=True)
-    torch.save(
-        {
-            "model": model.state_dict(),
-            "token_embedding": token_embedding.state_dict(),
-            "pos_encoding": pos_encoding.state_dict(),
-            "vocab_size": vocab_size,
-            "d_model": config.d_model,
-            "seq_len": config.seq_len,
-            "tokenizer_type": config.tokenizer_type.value,
-        },
-        config.model_save_path,
-    )
-    print(f"Model saved to {config.model_save_path}")
+def save_model(model, token_embedding, pos_encoding, vocab_size: int, config: dict):
+    tokenizer_type = get_tokenizer_type(config)
+
+    if tokenizer_type == TokenizerTypeEnum.BPE_HUGGING_FACE:
+        save_path = MODEL_DIR / "bigram_model_bpe_hugging_face.pt"
+    else:
+        save_path = MODEL_DIR / "bigram_model.pt"
+
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+
+    model_cfg = config[SectionEnum.MODEL]
+
+    checkpoint = {
+        CheckpointEnum.MODEL: model.state_dict(),
+        CheckpointEnum.TOKEN_EMBEDDING: token_embedding.state_dict(),
+        CheckpointEnum.POS_ENCODING: pos_encoding.state_dict(),
+        CheckpointEnum.VOCAB_SIZE: vocab_size,
+        CheckpointEnum.D_MODEL: model_cfg[BigramModelEnum.D_MODEL],
+        CheckpointEnum.SEQ_LEN: model_cfg[BigramModelEnum.SEQ_LEN],
+        CheckpointEnum.TOKENIZER_TYPE: str(tokenizer_type),
+    }
+
+    torch.save({str(k): v for k, v in checkpoint.items()}, save_path)
+    print(f"Model saved to {save_path}")
+
+    return save_path
 
 
-def main(config: BigramConfig):
+def save_metrics(metrics: TrainingMetrics, tokenizer_type: TokenizerTypeEnum):
+    if tokenizer_type == TokenizerTypeEnum.BPE_HUGGING_FACE:
+        metrics_path = MODEL_DIR / "bigram_model_bpe_hugging_face_metrics.json"
+    else:
+        metrics_path = MODEL_DIR / "bigram_model_metrics.json"
+
+    with open(metrics_path, "w") as f:
+        json.dump(
+            {
+                "steps": metrics.steps,
+                "train_loss": metrics.train_loss,
+                "val_loss": metrics.val_loss,
+                "train_perplexity": metrics.train_perplexity,
+                "val_perplexity": metrics.val_perplexity,
+            },
+            f,
+            indent=2,
+        )
+
+    print(f"Metrics saved to {metrics_path}")
+
+
+def main(config: dict):
     device = get_device()
-    print(f"Using device: {device}")
-    print(f"Tokenizer: {config.tokenizer_type.value}\n")
+    tokenizer_type = get_tokenizer_type(config)
+    tokenizer_path = get_tokenizer_path(config)
 
-    if config.tokenizer_type == TokenizerType.CHAR:
-        tokenizer = load_char_tokenizer(config.tokenizer_path)
+    print(f"Using device: {device}")
+    print(f"Tokenizer: {tokenizer_type}\n")
+
+    if tokenizer_type == TokenizerTypeEnum.CHAR:
+        tokenizer = load_char_tokenizer(tokenizer_path)
         vocab_size = tokenizer.get_vocab_size
     else:
-        tokenizer = load_bpe_hugging_face_tokenizer(config.tokenizer_path)
+        tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
         vocab_size = tokenizer.get_vocab_size()
 
-    texts = read_file_only_reviews(config.data_path)
-    encoded = encode_texts(texts, tokenizer, config.tokenizer_type)
+    data_path = get_data_path(config)
+    texts = read_file_only_reviews(data_path)
+    encoded = encode_texts(texts, tokenizer, tokenizer_type)
     print(f"Total tokens: {len(encoded):,}".replace(",", "."))
 
-    train_data, val_data, _ = train_val_test_split(encoded, config.train_size, config.val_size)
+    data_cfg = config[SectionEnum.DATA]
+    train_data, val_data, _ = train_val_test_split(
+        encoded,
+        data_cfg[DataConfigEnum.TRAIN_SIZE],
+        data_cfg[DataConfigEnum.VAL_SIZE],
+    )
 
-    token_embedding = TokenEmbedding(vocab_size, config.d_model, scale=False).to(device)
-    pos_encoding = PositionalEncoding(config.d_model, max_seq_len=config.seq_len).to(device)
-    model = BigramLanguageModel(vocab_size, config.d_model).to(device)
+    model_cfg = config[SectionEnum.MODEL]
+    d_model = model_cfg[BigramModelEnum.D_MODEL]
+    seq_len = model_cfg[BigramModelEnum.SEQ_LEN]
+
+    token_embedding = TokenEmbedding(vocab_size, d_model, scale=False).to(device)
+    pos_encoding = PositionalEncoding(d_model, max_seq_len=seq_len).to(device)
+    model = BigramLanguageModel(vocab_size, d_model).to(device)
 
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Model parameters: {total_params:,}\n".replace(",", "."))
 
+    training_cfg = config[SectionEnum.TRAINING]
     optimizer = torch.optim.AdamW(
         list(model.parameters()) + list(token_embedding.parameters()),
-        lr=config.learning_rate,
+        lr=training_cfg[TrainingEnum.LEARNING_RATE],
     )
 
     forward_pass = create_forward_pass(token_embedding, pos_encoding)
 
-    train_loop(
+    data = {DataSplitEnum.TRAIN: train_data, DataSplitEnum.VAL: val_data}
+    metrics = train_loop(
         model,
         forward_pass,
-        train_data,
-        val_data,
+        data,
         optimizer,
-        config.seq_len,
-        config.batch_size,
-        config.max_iters,
-        config.eval_interval,
-        config.eval_iters,
+        seq_len,
+        training_cfg[TrainingEnum.BATCH_SIZE],
+        training_cfg[TrainingEnum.MAX_ITERS],
+        training_cfg[TrainingEnum.EVAL_INTERVAL],
+        training_cfg[TrainingEnum.EVAL_ITERS],
         device,
     )
 
     save_model(model, token_embedding, pos_encoding, vocab_size, config)
+    save_metrics(metrics, tokenizer_type)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train Bigram Language Model")
-    parser.add_argument(
-        "--tokenizer",
-        type=str,
-        choices=["bpe", "char"],
-        default="bpe",
-        help="Tokenizer type: 'bpe' (default) or 'char'",
-    )
-    parser.add_argument("--max-iters", type=int, help="Maximum training iterations")
-    parser.add_argument("--batch-size", type=int, help="Batch size")
+    parser.add_argument("config", type=str, help="Config file path")
 
     args = parser.parse_args()
 
-    tokenizer_type = TokenizerType.BPE_HUGGING_FACE if args.tokenizer == "bpe" else TokenizerType.CHAR
-    config = BigramConfig(tokenizer_type=tokenizer_type)
+    config = load_config(args.config)
+    print(f"Loading config: {args.config}\n")
 
-    if args.max_iters:
-        config.max_iters = args.max_iters
-    if args.batch_size:
-        config.batch_size = args.batch_size
+    if get_model_type(config) != ModelTypeEnum.BIGRAM:
+        raise ValueError(f"Config '{args.config}' is not a bigram config")
 
     main(config)

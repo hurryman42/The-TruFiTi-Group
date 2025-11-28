@@ -1,4 +1,4 @@
-from src.enums import TokenizerType
+from src.enums import TokenizerTypeEnum
 
 
 def encode_char(texts: list[str], tokenizer) -> list[int]:
@@ -16,7 +16,7 @@ def encode_bpe(texts: list[str], tokenizer, batch_size: int = 1000) -> list[int]
     return all_ids
 
 
-def encode_texts(texts: list[str], tokenizer, tokenizer_type: TokenizerType) -> list[int]:
-    if tokenizer_type == TokenizerType.CHAR:
+def encode_texts(texts: list[str], tokenizer, tokenizer_type: TokenizerTypeEnum) -> list[int]:
+    if tokenizer_type == TokenizerTypeEnum.CHAR:
         return encode_char(texts, tokenizer)
     return encode_bpe(texts, tokenizer)
