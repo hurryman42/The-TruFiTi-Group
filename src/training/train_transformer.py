@@ -1,7 +1,7 @@
 import argparse
 import json
-
 import torch
+import wandb
 
 from src.config import (
     MODEL_DIR,
@@ -103,6 +103,12 @@ def print_training_statistics(config: dict, train_data_len: int):
 
 
 def main(config: dict):
+    wandb.init(
+        project="film-critic-lm",
+        entity="the-trufiti-group",
+        config=config.__dict__,
+    )
+
     device = get_device()
     tokenizer_type = get_tokenizer_type(config)
     tokenizer_path = get_tokenizer_path(config)
@@ -167,10 +173,13 @@ def main(config: dict):
         training_cfg[TrainingEnum.EVAL_INTERVAL],
         training_cfg[TrainingEnum.EVAL_ITERS],
         device,
+        wandb,
     )
 
     save_model(model, vocab_size, num_params, config)
     save_metrics(metrics, num_params)
+
+    wandb.finish()
 
 
 if __name__ == "__main__":

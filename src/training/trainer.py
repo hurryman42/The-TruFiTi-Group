@@ -3,6 +3,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 import torch
+from tqdm import tqdm
 
 from src.enums import DataSplitEnum
 from src.utils.training import get_batch
@@ -64,28 +65,40 @@ def train_loop(
     eval_interval: int,
     eval_iters: int,
     device: str,
+    wandb_run=None,
 ) -> TrainingMetrics:
     metrics = TrainingMetrics()
 
     print("Starting training...\n")
 
-    for step in range(max_iters):
-        if step % eval_interval == 0 or step == max_iters - 1:
-            losses = estimate_loss(model, forward_pass, data, seq_len, batch_size, eval_iters, device)
-            metrics.add(step, losses[DataSplitEnum.TRAIN], losses[DataSplitEnum.VAL])
+    with tqdm(range(max_iters), desc="Training Progress", unit="step") as pbar:
+        for step in pbar:
+            # eval step
+            if step % eval_interval == 0 or step == max_iters - 1:
+                losses = estimate_loss(model, forward_pass, data, seq_len, batch_size, eval_iters, device)
+                metrics.add(step, losses[DataSplitEnum.TRAIN], losses[DataSplitEnum.VAL])
 
-            print(
-                f"Step {step}: "
-                f"train loss {losses[DataSplitEnum.TRAIN]:.4f} (ppl {math.exp(losses[DataSplitEnum.TRAIN]):.2f}), "
-                f"val loss {losses[DataSplitEnum.VAL]:.4f} (ppl {math.exp(losses[DataSplitEnum.VAL]):.2f})"
-            )
+                print(
+                    f"Step {step}: "
+                    f"train loss {losses[DataSplitEnum.TRAIN]:.4f} (ppl {math.exp(losses[DataSplitEnum.TRAIN]):.2f}), "
+                    f"val loss {losses[DataSplitEnum.VAL]:.4f} (ppl {math.exp(losses[DataSplitEnum.VAL]):.2f})"
+                )
+                pbar.set_postfix(train_loss=losses[DataSplitEnum.TRAIN], val_loss=losses[DataSplitEnum.VAL])
 
-        x, y = get_batch(data[DataSplitEnum.TRAIN], seq_len, batch_size, device)
-        loss = forward_pass(model, x, y)
+            # training step
+            x, y = get_batch(data[DataSplitEnum.TRAIN], seq_len, batch_size, device)
+            loss = forward_pass(model, x, y)
 
-        optimizer.zero_grad(set_to_none=True)
-        loss.backward()
-        optimizer.step()
+            optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+            optimizer.step()
+
+            if wandb_run is not None:
+                wandb_run.log({
+                    "train_loss": losses[DataSplitEnum.TRAIN],
+                    "val_loss": losses[DataSplitEnum.VAL],
+                    "step": step,
+                })
 
     print("\nTraining completed!")
     return metrics
