@@ -74,7 +74,7 @@ def train_loop(
     with tqdm(range(max_iters), desc="Training Progress", unit="step") as pbar:
         for step in pbar:
             # eval step
-            if step % eval_interval == 0 or step == max_iters - 1:
+            if step % eval_interval == 0 or step == max_iters - 1 or (step <= 1000 and step % 100 == 0):
                 losses = estimate_loss(model, forward_pass, data, seq_len, batch_size, eval_iters, device)
                 metrics.add(step, losses[DataSplitEnum.TRAIN], losses[DataSplitEnum.VAL])
 

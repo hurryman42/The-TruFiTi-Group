@@ -58,6 +58,7 @@ def save_model(model, vocab_size: int, num_params: int, config: dict):
         CheckpointEnum.FF_HIDDEN_DIM: model_cfg[TransformerModelEnum.FF_HIDDEN_DIM],
         CheckpointEnum.DROPOUT: model_cfg[TransformerModelEnum.DROPOUT],
         CheckpointEnum.TOKENIZER_TYPE: str(tokenizer_type),
+        CheckpointEnum.DATA_SEED: config[SectionEnum.DATA][DataConfigEnum.SEED],
     }
 
     torch.save({str(k): v for k, v in checkpoint.items()}, save_path)
@@ -133,6 +134,8 @@ def main(config: dict):
         encoded,
         data_cfg[DataConfigEnum.TRAIN_SIZE],
         data_cfg[DataConfigEnum.VAL_SIZE],
+        data_cfg[DataConfigEnum.TEST_SIZE],
+        seed=data_cfg[DataConfigEnum.SEED],
     )
 
     print_training_statistics(config, len(train_data))
@@ -155,7 +158,7 @@ def main(config: dict):
     training_cfg = config[SectionEnum.TRAINING]
     optimizer = torch.optim.AdamW(
         model.parameters(),
-        lr=training_cfg[TrainingEnum.LEARNING_RATE],
+        lr=float(training_cfg[TrainingEnum.LEARNING_RATE]),
         weight_decay=training_cfg[TrainingEnum.WEIGHT_DECAY],
     )
 
@@ -188,6 +191,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # TODO change config dict to a DTO 
     config = load_config(args.config)
     print(f"Loading config: {args.config}\n")
 

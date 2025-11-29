@@ -18,7 +18,9 @@ training:
   eval_iters: 20
 
 data:
-  train_size: 0.9
+  train_size: 0.8
   val_size: 0.1
+  test_size: 0.1
   file: letterboxd_filtered_short_synopsis_film.jsonl
+  seed: 42
 
