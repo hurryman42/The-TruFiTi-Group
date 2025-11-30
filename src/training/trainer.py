@@ -3,6 +3,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 import torch
+from torch.optim.lr_scheduler import LambdaLR
 from tqdm import tqdm
 
 from src.enums import DataSplitEnum
@@ -54,6 +55,39 @@ def estimate_loss(
     return losses
 
 
+def create_scheduler(optimizer, warmup_iters: int) -> LambdaLR:
+    def lr_lambda(step: int) -> float:
+        if warmup_iters > 0 and step < warmup_iters:
+            return (step + 1) / warmup_iters
+        return 1.0
+
+    return LambdaLR(optimizer, lr_lambda)
+
+
+def check_early_stopping(
+    val_loss: float,
+    best_val_loss: float,
+    patience_counter: int,
+    patience: int,
+    min_delta: float,
+) -> tuple[float, int, bool]:
+    if val_loss < best_val_loss - min_delta:
+        return val_loss, 0, False
+
+    new_counter = patience_counter + 1
+    return best_val_loss, new_counter, new_counter >= patience
+
+
+def should_eval(step: int, eval_interval: int, max_iters: int) -> bool:
+    if step % eval_interval == 0:
+        return True
+    if step == max_iters - 1:
+        return True
+    if step <= 1000 and step % 100 == 0:
+        return True
+    return False
+
+
 def train_loop(
     model,
     forward_pass: Callable,
@@ -66,38 +100,50 @@ def train_loop(
     eval_iters: int,
     device: str,
     wandb_run=None,
+    patience: int = 5,
+    min_delta: float = 1e-3,
+    warmup_iters: int = 0,
 ) -> TrainingMetrics:
     metrics = TrainingMetrics()
+    best_val_loss = float("inf")
+    patience_counter = 0
+    scheduler = create_scheduler(optimizer, warmup_iters)
 
     print("Starting training...\n")
 
     with tqdm(range(max_iters), desc="Training Progress", unit="step") as pbar:
         for step in pbar:
-            # eval step
-            if step % eval_interval == 0 or step == max_iters - 1 or (step <= 1000 and step % 100 == 0):
+            if should_eval(step, eval_interval, max_iters):
                 losses = estimate_loss(model, forward_pass, data, seq_len, batch_size, eval_iters, device)
                 metrics.add(step, losses[DataSplitEnum.TRAIN], losses[DataSplitEnum.VAL])
-
-                #print(
-                #    f"Step {step}: "
-                #    f"train loss {losses[DataSplitEnum.TRAIN]:.4f} (ppl {math.exp(losses[DataSplitEnum.TRAIN]):.2f}), "
-                #    f"val loss {losses[DataSplitEnum.VAL]:.4f} (ppl {math.exp(losses[DataSplitEnum.VAL]):.2f})"
-                #)
                 pbar.set_postfix(train_loss=losses[DataSplitEnum.TRAIN], val_loss=losses[DataSplitEnum.VAL])
-                if wandb_run is not None:
-                    wandb_run.log({
-                        "train_loss": losses[DataSplitEnum.TRAIN],
-                        "val_loss": losses[DataSplitEnum.VAL],
-                        "step": step,
-                    })
 
-            # training step
+                if wandb_run is not None:
+                    wandb_run.log(
+                        {
+                            "train_loss": losses[DataSplitEnum.TRAIN],
+                            "val_loss": losses[DataSplitEnum.VAL],
+                            "train_perplexity": math.exp(losses[DataSplitEnum.TRAIN]),
+                            "val_perplexity": math.exp(losses[DataSplitEnum.VAL]),
+                        },
+                        step=step,
+                    )
+
+                best_val_loss, patience_counter, should_stop = check_early_stopping(
+                    losses[DataSplitEnum.VAL], best_val_loss, patience_counter, patience, min_delta
+                )
+                if should_stop:
+                    print(f"\nEarly stopping at step {step}")
+                    break
+
             x, y = get_batch(data[DataSplitEnum.TRAIN], seq_len, batch_size, device)
             loss = forward_pass(model, x, y)
-
             optimizer.zero_grad(set_to_none=True)
+
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
+            scheduler.step()  # adjusting learning rate for next step
 
     print("\nTraining completed!")
     return metrics

@@ -16,6 +16,7 @@ training:
   max_iters: 3000
   eval_interval: 1000
   eval_iters: 20
+  warmup_iters: 100
 
 data:
   train_size: 0.8

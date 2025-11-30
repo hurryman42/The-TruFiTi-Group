@@ -1,0 +1,44 @@
+program: src/training/train_transformer.py
+method: bayes
+metric:
+  name: val_loss
+  goal: minimize
+
+parameters:
+  config:
+    value: transformer_large
+
+  training.learning_rate:
+    distribution: log_uniform_values
+    min: 0.00005
+    max: 0.001
+
+  training.batch_size:
+    values: [32, 64, 128]
+
+  training.weight_decay:
+    distribution: log_uniform_values
+    min: 0.0001
+    max: 0.1
+
+  training.warmup_iters:
+    values: [100, 300, 500]
+
+  model.dropout:
+    distribution: uniform
+    min: 0.05
+    max: 0.25
+
+  model.d_model:
+    values: [128, 256]
+
+  model.num_blocks:
+    values: [4, 6]
+
+  model.num_heads:
+    values: [4, 8]
+
+early_terminate:
+  type: hyperband
+  min_iter: 300
+  max_iter: 2000

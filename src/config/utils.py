@@ -43,6 +43,10 @@ def _add_computed_fields(config: dict[str, Any]) -> None:
         model_section[TransformerModelEnum.HEAD_DIM] = d_model // num_heads
 
 
+def recompute_computed_fields(config: dict[str, Any]) -> None:
+    _add_computed_fields(config)
+
+
 def get_model_type(config: dict[str, Any]) -> ModelTypeEnum:
     return ModelTypeEnum(config[SectionEnum.MODEL][TransformerModelEnum.TYPE])
 

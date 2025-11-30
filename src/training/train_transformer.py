@@ -1,8 +1,9 @@
 import argparse
 import json
-import torch
-import wandb
 
+import torch
+
+import wandb
 from src.config import (
     MODEL_DIR,
     get_data_path,
@@ -12,6 +13,7 @@ from src.config import (
     get_tokenizer_type,
     load_config,
 )
+from src.config.utils import recompute_computed_fields
 from src.enums import (
     CheckpointEnum,
     DataConfigEnum,
@@ -29,6 +31,7 @@ from src.utils.device import get_device
 from src.utils.encoding import encode_texts
 from src.utils.tokenizer_loader import load_bpe_hugging_face_tokenizer, load_char_tokenizer
 from src.utils.training import train_val_test_split
+from src.utils.wandb_transfomer_config_override import apply_wandb_overrides
 
 
 def create_forward_pass():
@@ -110,6 +113,12 @@ def main(config: dict):
         config=config,
     )
 
+    if wandb.config.get("config"):
+        config = load_config(wandb.config.config)
+        config = apply_wandb_overrides(config)
+        recompute_computed_fields(config)
+        wandb.config.update(config, allow_val_change=True)
+
     device = get_device()
     tokenizer_type = get_tokenizer_type(config)
     tokenizer_path = get_tokenizer_path(config)
@@ -177,6 +186,7 @@ def main(config: dict):
         training_cfg[TrainingEnum.EVAL_ITERS],
         device,
         wandb,
+        warmup_iters=training_cfg[TrainingEnum.WARMUP_ITERS],
     )
 
     save_model(model, vocab_size, num_params, config)
@@ -191,7 +201,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # TODO change config dict to a DTO 
+    # TODO change config dict to a DTO
     config = load_config(args.config)
     print(f"Loading config: {args.config}\n")
 

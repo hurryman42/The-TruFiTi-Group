@@ -10,6 +10,7 @@ from src.config.utils import (
     get_tokenizer_path,
     get_tokenizer_type,
     load_config,
+    recompute_computed_fields,
 )
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "get_tokenizer_path",
     "get_tokenizer_type",
     "load_config",
+    "recompute_computed_fields",
 ]
