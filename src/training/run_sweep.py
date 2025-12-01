@@ -6,7 +6,7 @@ import yaml
 import wandb
 from src.training.train_transformer import main as train
 
-SWEEP_CONFIG_DIR = Path("src/training/wandb_sweep")
+SWEEP_CONFIG_DIR = Path("src/config/wandb_sweep")
 
 
 def main() -> None:
