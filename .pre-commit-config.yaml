@@ -18,3 +18,10 @@ repos:
         always_run: true
         verbose: true
         stages: [pre-push]
+      - id: mypy-warning
+        name: mypy
+        entry: bash -c "uv run mypy . || true" # TODO remove "|| true" after bpe_tokenizer fix
+        language: system
+        pass_filenames: false
+        verbose: true
+        stages: [ pre-push ]

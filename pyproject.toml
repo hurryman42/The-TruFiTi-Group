@@ -27,8 +27,11 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "mypy>=1.19.0",
     "pre-commit>=4.4.0,<5",
     "ruff>=0.14.5,<0.15",
+    "types-pyyaml>=6.0.12.20250915",
+    "types-tqdm>=4.67.0.20250809",
 ]
 
 [tool.uv]
@@ -41,6 +44,11 @@ build-backend = "hatchling.build"
 [tool.ruff]
 line-length = 120
 target-version = "py312"
+
+[tool.mypy]
+[[tool.mypy.overrides]]
+module = ["tokenizers", "tokenizers.*"]
+ignore_missing_imports = true
 
 [tool.ruff.lint]
 select = [

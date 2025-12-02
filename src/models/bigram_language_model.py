@@ -10,7 +10,7 @@ class BigramLanguageModel(nn.Module):
         self.vocab_size = vocab_size
 
     def forward(
-        self, embeddings: torch.Tensor, targets: torch.Tensor = None
+        self, embeddings: torch.Tensor, targets: torch.Tensor | None = None
     ) -> tuple[torch.Tensor, torch.Tensor | None]:
         # [batch_size, seq_len, dim_embedding] -> [batch_size, seq_len, vocab_size]
         logits = self.embedding_to_vocab(embeddings)

@@ -162,7 +162,7 @@ def main(config: dict):
     ).to(device)
 
     num_params = sum(p.numel() for p in model.parameters())
-    print(f"Model parameters: {num_params:,} ({num_params/1_000_000:.1f}M)\n".replace(",", "."))
+    print(f"Model parameters: {num_params:,} ({num_params / 1_000_000:.1f}M)\n".replace(",", "."))
 
     training_cfg = config[SectionEnum.TRAINING]
     optimizer = torch.optim.AdamW(
