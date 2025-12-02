@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -7,6 +8,20 @@ import sys
 DEFAULT_MIN_SYNOPSIS_WORDS = 0
 DEFAULT_MAX_NON_LATIN_CHARS = 20
 DEFAULT_MAX_EMOJIS = 5
+DEFAULT_MIN_REVIEW_WORDS = 4
+
+BAD_PATTERNS = [
+    re.compile(r"this review may contain spoilers"),  # "This review may contain spoilers. I can handle the truth."
+    re.compile(r"english version below"),  # "Deutsche Kritik oben. English Version below ..."
+    re.compile(r"^starring:"),  # "Starring: Jackie Chan, Chris Tucker, Tom Wilkinson"
+    re.compile(r"^seen (at|via|on)"),  # "Seen via Panic Fest 2023" or "Seen at the cinema"
+    re.compile(r"^watched (at|via|with|on)"),  # "Watched with the Golden Reel Gin Joint"
+    re.compile(r"^part of (my|the)"),  # "Part of my Japanese New Wave Top 200"
+    re.compile(r"challenge$"),  # "All Disney Features and Shorts Challenge"
+    re.compile(r"^review from"),  # "Review from my VOD column 'This Week on Demand'"
+    re.compile(r"watchlist$"),  # "French Film Noir Watchlist"
+    re.compile(r"^action! -"),  # "ACTION! - KILLER MIIKE"
+]
 
 
 def count_non_latin_chars(text):
@@ -38,14 +53,48 @@ def has_sufficient_synopsis(synopsis, min_words):
     return word_count >= min_words
 
 
-def filter_per_film(data, min_synopsis_words, max_non_latin_chars, max_emojis):
+def get_hash(text):
+    return hashlib.md5(text.lower().strip().encode("utf-8")).hexdigest()
+
+
+def is_valid_review(text, max_non_latin_chars, max_emojis, min_words=DEFAULT_MIN_REVIEW_WORDS):
+    if not text or not text.strip():
+        return False
+
+    text_lower = text.lower().strip()
+
+    word_count = len(text_lower.split())
+    if word_count < min_words:
+        return False
+
+    for pattern in BAD_PATTERNS:
+        if pattern.search(text_lower):
+            return False
+
+    if count_emojis(text) > max_emojis:
+        return False
+
+    if count_non_latin_chars(text) > max_non_latin_chars:
+        return False
+
+    return True
+
+
+def filter_per_film(data, min_synopsis_words, max_non_latin_chars, max_emojis, seen_hashes):
     reviews = data.get("reviews", [])
     filtered_reviews = []
 
     for r in reviews:
         review_text = r.get("review_text", "")
-        if count_emojis(review_text) <= max_emojis and count_non_latin_chars(review_text) <= max_non_latin_chars:
-            filtered_reviews.append(review_text)
+        if not is_valid_review(review_text, max_non_latin_chars, max_emojis):
+            continue
+
+        text_hash = get_hash(review_text)
+        if text_hash in seen_hashes:
+            continue
+        seen_hashes.add(text_hash)
+
+        filtered_reviews.append(review_text)
 
     if not filtered_reviews:
         return None
@@ -74,7 +123,7 @@ def filter_per_review(
     filtered_reviews = []
     for r in reviews:
         review_text = r.get("review_text", "")
-        if not review_text:
+        if not is_valid_review(review_text):
             continue
         if count_emojis(review_text) <= max_emojis and count_non_latin_chars(review_text) <= max_non_latin_chars:
             filtered_reviews.append({"title": title, "year": year, "synopsis": synopsis, "review_text": review_text})
@@ -128,6 +177,7 @@ def main():
     filtered_reviews = 0
 
     with open(args.input_file, encoding="utf-8") as infile, open(output_file, "w", encoding="utf-8") as outfile:
+        seen_hashes = set()
         for index, line in enumerate(infile, 1):
             try:
                 data = json.loads(line)
@@ -135,7 +185,9 @@ def main():
                 total_reviews += len(data.get("reviews", []))
 
                 if args.mode == "film":
-                    filtered = filter_per_film(data, args.min_synopsis_words, args.max_non_latin_chars, args.max_emojis)
+                    filtered = filter_per_film(
+                        data, args.min_synopsis_words, args.max_non_latin_chars, args.max_emojis, seen_hashes
+                    )
                     if filtered:
                         outfile.write(json.dumps(filtered, ensure_ascii=False) + "\n")
                         processed_count += 1
