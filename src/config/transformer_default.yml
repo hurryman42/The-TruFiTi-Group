@@ -1,22 +1,22 @@
 model:
   type: transformer
   d_model: 128
-  num_heads: 1
-  num_blocks: 1
-  seq_len: 32
+  num_heads: 4
+  num_blocks: 4
+  seq_len: 128
   dropout: 0.1
 
 tokenizer:
   type: bpe_hugging_face
 
 training:
-  batch_size: 8
-  learning_rate: 0.0001
+  batch_size: 32
+  learning_rate: 3e-4
   weight_decay: 0.0
-  max_iters: 3000
+  max_iters: 10000
   eval_interval: 250
   eval_iters: 20
-  warmup_iters: 0
+  warmup_iters: 100
 
 data:
   train_size: 0.8

@@ -38,8 +38,8 @@ def get_batch(
     batch_size: int,
     device: str,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    # ix = torch.randint(len(data) - seq_len, (batch_size,))
-    ix = torch.tensor([i + 100 for i in range(batch_size)], dtype=torch.long, device=device)
+    ix = torch.randint(len(data) - seq_len - 1, (batch_size,))
+    # ix = torch.tensor([i + seq_len + 1 for i in range(batch_size)], dtype=torch.long, device=device)
 
     x = torch.stack([data[i : i + seq_len] for i in ix])
     y = torch.stack([data[i + 1 : i + seq_len + 1] for i in ix])

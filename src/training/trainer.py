@@ -101,7 +101,7 @@ def train_loop(
     device: str,
     wandb_run=None,
     patience: int = 5,
-    min_delta: float = 1e-4,
+    min_delta: float = 1e-3,
     warmup_iters: int = 0,
 ) -> TrainingMetrics:
     metrics = TrainingMetrics()
@@ -138,12 +138,16 @@ def train_loop(
 
             x, y = get_batch(data[DataSplitEnum.TRAIN], seq_len, batch_size, device)
             loss = forward_pass(model, x, y)
+
+            if step % 50 == 0:
+                print(f"Step {step}: loss = {loss.item():.4f}")
+
             optimizer.zero_grad(set_to_none=True)
 
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
-            scheduler.step()  # adjusting learning rate for next step
+            scheduler.step()
 
     print("\nTraining completed!")
     return metrics
