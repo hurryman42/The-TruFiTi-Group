@@ -101,7 +101,7 @@ def train_loop(
     device: str,
     wandb_run=None,
     patience: int = 5,
-    min_delta: float = 1e-3,
+    min_delta: float = 1e-4,
     warmup_iters: int = 0,
 ) -> TrainingMetrics:
     metrics = TrainingMetrics()

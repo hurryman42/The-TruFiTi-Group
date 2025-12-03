@@ -1,4 +1,5 @@
 from src.enums import TokenizerTypeEnum
+from src.enums.types import SpecialTokensEnum
 
 
 def encode_char(texts: list[str], tokenizer) -> list[int]:
@@ -8,11 +9,19 @@ def encode_char(texts: list[str], tokenizer) -> list[int]:
 
 def encode_bpe(texts: list[str], tokenizer, batch_size: int = 1000) -> list[int]:
     all_ids = []
+
+    bos_id = tokenizer.token_to_id(SpecialTokensEnum.BOS)
+    eos_id = tokenizer.token_to_id(SpecialTokensEnum.EOS)
+    if eos_id is None or bos_id is None:
+        raise ValueError("Special tokens were not trained!")
+
     for i in range(0, len(texts), batch_size):
         batch = texts[i : i + batch_size]
         encoded_batch = tokenizer.encode_batch(batch)
         for encoded in encoded_batch:
+            all_ids.append(bos_id)
             all_ids.extend(encoded.ids)
+            all_ids.append(eos_id)
     return all_ids
 
 

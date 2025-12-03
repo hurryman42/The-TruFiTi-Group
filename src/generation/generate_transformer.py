@@ -4,6 +4,7 @@ from pathlib import Path
 import torch
 
 from src.enums import CheckpointEnum, TokenizerTypeEnum
+from src.enums.types import SpecialTokensEnum
 from src.models.transformer.transformer import TransformerDecoderOnly
 from src.utils.device import get_device
 from src.utils.tokenizer_loader import load_bpe_hugging_face_tokenizer, load_char_tokenizer
@@ -51,7 +52,7 @@ def load_model(model_path: Path):
     return model, tokenizer, tokenizer_type, device
 
 
-def generate(model, tokenizer, tokenizer_type, device, prompt: str = "", length: int = 200) -> str:
+def generate(model, tokenizer, tokenizer_type, device, prompt: str = "", length: int = 100) -> str:
     if prompt:
         if tokenizer_type == TokenizerTypeEnum.CHAR:
             idx = torch.tensor(tokenizer.encode(prompt), dtype=torch.long, device=device).unsqueeze(0)
@@ -59,7 +60,11 @@ def generate(model, tokenizer, tokenizer_type, device, prompt: str = "", length:
             encoded = tokenizer.encode(prompt)
             idx = torch.tensor(encoded.ids, dtype=torch.long, device=device).unsqueeze(0)
     else:
-        idx = torch.zeros((1, 1), dtype=torch.long, device=device)
+        if tokenizer_type == TokenizerTypeEnum.CHAR:
+            idx = torch.zeros((1, 1), dtype=torch.long, device=device)
+        else:
+            bos_id = tokenizer.token_to_id(SpecialTokensEnum.BOS)
+            idx = torch.tensor([[bos_id]], dtype=torch.long, device=device)
 
     generated = model.generate(idx, length)
 
@@ -72,7 +77,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate text with Transformer Language Model")
     parser.add_argument("--model", type=str, required=True, help="Model filename")
     parser.add_argument("--prompt", type=str, default="", help="Prompt for generation")
-    parser.add_argument("--length", type=int, default=200, help="Number of tokens to generate")
+    parser.add_argument("--length", type=int, default=100, help="Number of tokens to generate")
 
     args = parser.parse_args()
 
@@ -80,6 +85,10 @@ if __name__ == "__main__":
     model, tokenizer, tokenizer_type, device = load_model(model_path)
 
     print("=" * 80)
-    print(f"Prompt: '{args.prompt}'" if args.prompt else "Unconditional generation:")
+    print(
+        f"Prompt: '{args.prompt}'"
+        if args.prompt
+        else f"Unconditional generation: (Starting with {SpecialTokensEnum.BOS}):"
+    )
     print("=" * 80)
     print(generate(model, tokenizer, tokenizer_type, device, args.prompt, args.length))

@@ -6,10 +6,11 @@ from tokenizers.models import BPE
 from tokenizers.pre_tokenizers import ByteLevel
 from tokenizers.trainers import BpeTrainer
 
+from src.enums.types import SpecialTokensEnum
 from src.utils.data_loader import read_file_only_reviews
 
 # TODO choose tokenizer size in config file
-VOCAB_SIZE = 3000
+VOCAB_SIZE = 4000
 BASE_DIR = Path(__file__).resolve().parent.parent
 INPUT_FILE = BASE_DIR.parent / "data" / "letterboxd_filtered_short_synopsis_film.jsonl"
 SAVE_PATH = BASE_DIR.parent / "tokenizer" / f"bpe_hugging_face_tokenizer_{VOCAB_SIZE}.json"
@@ -22,7 +23,7 @@ def train_bpe_tokenizer(texts: list[str], vocab_size: int) -> Tokenizer:
 
     trainer = BpeTrainer(
         vocab_size=vocab_size,
-        special_tokens=["[PAD]"],
+        special_tokens=[token.value for token in SpecialTokensEnum],
         show_progress=True,
     )
 
