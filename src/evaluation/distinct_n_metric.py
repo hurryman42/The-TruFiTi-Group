@@ -15,28 +15,29 @@ class DistinctNMetric(BaseEvaluationMetric):
         self,
         generated: List[str],
         references: List[List[str]] = None,
-    ) -> MetricResult:
-        all_ngrams = []
-        total_ngrams = 0
+        ) -> MetricResult:
+            all_ngrams = []
+            total_ngrams = 0
 
-        for sequence in generated:
-            # If your sequences are strings of space-separated tokens, split them:
-            tokens = sequence.split()
-            ngrams = [
-                tuple(tokens[i : i + self._n])
-                for i in range(len(tokens) - self._n + 1)
-            ]
-            all_ngrams.extend(ngrams)
-            total_ngrams += len(ngrams)
+            for sequence in generated:
+                # if sequences are strings of space-separated tokens, split them:
+                # here use the beginning of sequence / end of sequence symbols?
+                tokens = sequence.split()
+                ngrams = [
+                    tuple(tokens[i : i + self._n])
+                    for i in range(len(tokens) - self._n + 1)
+                ]
+                all_ngrams.extend(ngrams)
+                total_ngrams += len(ngrams)
 
-        unique_ngrams = set(all_ngrams)
-        score = len(unique_ngrams) / total_ngrams if total_ngrams > 0 else 0.0
+            unique_ngrams = set(all_ngrams)
+            score = len(unique_ngrams) / total_ngrams if total_ngrams > 0 else 0.0
 
-        details = {
-            "unique_ngrams": len(unique_ngrams),
-            "total_ngrams": total_ngrams,
-            "distinct_ngrams": unique_ngrams,
-            "n": self._n,
-        }
+            details = {
+                "unique_ngrams": len(unique_ngrams),
+                "total_ngrams": total_ngrams,
+                "distinct_ngrams": unique_ngrams,
+                "n": self._n,
+            }
 
-        return MetricResult(name=self.name, score=score, details=details)
+            return MetricResult(name=self.name, score=score, details=details)
