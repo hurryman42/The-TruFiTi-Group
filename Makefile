@@ -5,7 +5,7 @@ DATA_FILE := $(DATA_DIR)/letterboxd_full.jsonl
 SRC_FILE := src/data/data_filter.py
 DOWNLOAD_URL := https://huggingface.co/datasets/pkchwy/letterboxd-all-movie-data/resolve/main/full_dump.jsonl
 
-MIN_SYNOPSIS_WORDS ?= 10
+MIN_SYNOPSIS_WORDS ?= 0
 MAX_EMOJIS ?= 5
 MAX_NON_LATIN_CHARS ?= 0
 

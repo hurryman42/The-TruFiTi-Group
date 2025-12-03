@@ -171,11 +171,6 @@ def main(config: dict):
         weight_decay=training_cfg[TrainingEnum.WEIGHT_DECAY],
     )
 
-    # optimizer = torch.optim.SGD(
-    #     model.parameters(),
-    #     lr=float(training_cfg[TrainingEnum.LEARNING_RATE]),
-    # )
-
     forward_pass = create_forward_pass()
 
     data = {DataSplitEnum.TRAIN: train_data, DataSplitEnum.VAL: val_data}

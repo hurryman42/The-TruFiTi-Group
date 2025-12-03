@@ -57,7 +57,12 @@ def get_hash(text):
     return hashlib.md5(text.lower().strip().encode("utf-8")).hexdigest()
 
 
-def is_valid_review(text, max_non_latin_chars, max_emojis, min_words=DEFAULT_MIN_REVIEW_WORDS):
+def is_valid_review(
+    text,
+    max_non_latin_chars,
+    max_emojis,
+    min_words=DEFAULT_MIN_REVIEW_WORDS,
+):
     if not text or not text.strip():
         return False
 
@@ -80,7 +85,13 @@ def is_valid_review(text, max_non_latin_chars, max_emojis, min_words=DEFAULT_MIN
     return True
 
 
-def filter_per_film(data, min_synopsis_words, max_non_latin_chars, max_emojis, seen_hashes):
+def filter_per_film(
+    data,
+    min_synopsis_words,
+    max_non_latin_chars,
+    max_emojis,
+    seen_hashes,
+):
     reviews = data.get("reviews", [])
     filtered_reviews = []
 
@@ -111,7 +122,10 @@ def filter_per_film(data, min_synopsis_words, max_non_latin_chars, max_emojis, s
 
 
 def filter_per_review(
-    data, min_synopsis_words, max_non_latin_chars, max_emojis
+    data,
+    min_synopsis_words,
+    max_non_latin_chars,
+    max_emojis,
 ):  # each review has its own entry with its film metadata
     if min_synopsis_words > 0 and not has_sufficient_synopsis(data.get("synopsis"), min_synopsis_words):
         return None

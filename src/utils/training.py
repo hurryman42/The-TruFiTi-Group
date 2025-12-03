@@ -18,10 +18,6 @@ def train_val_test_split(
     data_tensor = torch.tensor(data, dtype=torch.long)
     n = len(data_tensor)
 
-    torch.manual_seed(seed)
-    indices = torch.randperm(n)
-    data_tensor = data_tensor[indices]
-
     train_end = int(train_size * n)
     val_end = train_end + int(val_size * n)
 
