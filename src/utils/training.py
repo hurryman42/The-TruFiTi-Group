@@ -6,7 +6,6 @@ def train_val_test_split(
     train_size: float = 0.9,
     val_size: float = 0.1,
     test_size: float | None = None,
-    seed: int = 42,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor | None]:
     if test_size is None:
         assert train_size + val_size == 1.0, f"train_size + val_size must equal 1.0, got {train_size + val_size}"

@@ -1,5 +1,6 @@
 import argparse
 import json
+from random import random
 
 import torch
 
@@ -135,6 +136,8 @@ def main(config: dict):
 
     data_path = get_data_path(config)
     texts = read_file_only_reviews(data_path)
+    random.seed(data_cfg[DataConfigEnum.SEED])
+    random.shuffle(texts)
     encoded = encode_texts(texts, tokenizer, tokenizer_type)
     print(f"Total tokens: {len(encoded):,}".replace(",", "."))
 
@@ -144,7 +147,6 @@ def main(config: dict):
         data_cfg[DataConfigEnum.TRAIN_SIZE],
         data_cfg[DataConfigEnum.VAL_SIZE],
         data_cfg[DataConfigEnum.TEST_SIZE],
-        seed=data_cfg[DataConfigEnum.SEED],
     )
 
     print_training_statistics(config, len(train_data))
