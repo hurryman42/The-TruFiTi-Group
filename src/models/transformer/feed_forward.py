@@ -8,7 +8,7 @@ class FeedForward(nn.Module):
             nn.Linear(embedding_dimension, ff_hidden_dimension),
             nn.GELU(),
             nn.Linear(ff_hidden_dimension, embedding_dimension),
-            nn.Dropout(dropout)
+            nn.Dropout(dropout),
         )
 
     def forward(self, x):

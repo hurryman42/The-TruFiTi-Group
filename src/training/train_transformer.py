@@ -1,8 +1,10 @@
 import argparse
 import json
-import torch
-import wandb
+import random
 
+import torch
+
+import wandb
 from src.config import (
     MODEL_DIR,
     get_data_path,
@@ -12,6 +14,7 @@ from src.config import (
     get_tokenizer_type,
     load_config,
 )
+from src.config.utils import recompute_computed_fields
 from src.enums import (
     CheckpointEnum,
     DataConfigEnum,
@@ -29,6 +32,7 @@ from src.utils.device import get_device
 from src.utils.encoding import encode_texts
 from src.utils.tokenizer_loader import load_bpe_hugging_face_tokenizer, load_char_tokenizer
 from src.utils.training import train_val_test_split
+from src.utils.wandb_transfomer_config_override import apply_wandb_overrides
 
 
 def create_forward_pass():
@@ -58,6 +62,7 @@ def save_model(model, vocab_size: int, num_params: int, config: dict):
         CheckpointEnum.FF_HIDDEN_DIM: model_cfg[TransformerModelEnum.FF_HIDDEN_DIM],
         CheckpointEnum.DROPOUT: model_cfg[TransformerModelEnum.DROPOUT],
         CheckpointEnum.TOKENIZER_TYPE: str(tokenizer_type),
+        CheckpointEnum.DATA_SEED: config[SectionEnum.DATA][DataConfigEnum.SEED],
     }
 
     torch.save({str(k): v for k, v in checkpoint.items()}, save_path)
@@ -109,6 +114,12 @@ def main(config: dict):
         config=config,
     )
 
+    if wandb.config.get("config"):
+        config = load_config(wandb.config.config)
+        config = apply_wandb_overrides(config)
+        recompute_computed_fields(config)
+        wandb.config.update(config, allow_val_change=True)
+
     device = get_device()
     tokenizer_type = get_tokenizer_type(config)
     tokenizer_path = get_tokenizer_path(config)
@@ -123,16 +134,20 @@ def main(config: dict):
         tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
         vocab_size = tokenizer.get_vocab_size()
 
+    data_cfg = config[SectionEnum.DATA]
+
     data_path = get_data_path(config)
     texts = read_file_only_reviews(data_path)
+    random.seed(data_cfg[DataConfigEnum.SEED])
+    random.shuffle(texts)
     encoded = encode_texts(texts, tokenizer, tokenizer_type)
     print(f"Total tokens: {len(encoded):,}".replace(",", "."))
 
-    data_cfg = config[SectionEnum.DATA]
     train_data, val_data, _ = train_val_test_split(
         encoded,
         data_cfg[DataConfigEnum.TRAIN_SIZE],
         data_cfg[DataConfigEnum.VAL_SIZE],
+        data_cfg[DataConfigEnum.TEST_SIZE],
     )
 
     print_training_statistics(config, len(train_data))
@@ -150,12 +165,12 @@ def main(config: dict):
     ).to(device)
 
     num_params = sum(p.numel() for p in model.parameters())
-    print(f"Model parameters: {num_params:,} ({num_params/1_000_000:.1f}M)\n".replace(",", "."))
+    print(f"Model parameters: {num_params:,} ({num_params / 1_000_000:.1f}M)\n".replace(",", "."))
 
     training_cfg = config[SectionEnum.TRAINING]
     optimizer = torch.optim.AdamW(
         model.parameters(),
-        lr=training_cfg[TrainingEnum.LEARNING_RATE],
+        lr=float(training_cfg[TrainingEnum.LEARNING_RATE]),
         weight_decay=training_cfg[TrainingEnum.WEIGHT_DECAY],
     )
 
@@ -174,6 +189,7 @@ def main(config: dict):
         training_cfg[TrainingEnum.EVAL_ITERS],
         device,
         wandb,
+        warmup_iters=training_cfg[TrainingEnum.WARMUP_ITERS],
     )
 
     save_model(model, vocab_size, num_params, config)
@@ -188,6 +204,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # TODO change config dict to a DTO
     config = load_config(args.config)
     print(f"Loading config: {args.config}\n")
 

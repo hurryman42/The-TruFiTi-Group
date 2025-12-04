@@ -1,3 +1,5 @@
+import math
+
 import torch
 import torch.nn as nn
 
@@ -10,7 +12,7 @@ class TokenEmbedding(nn.Module):
 
         if scale:
             # see "Attention Is All You Need"
-            self.scale_factor = torch.sqrt(torch.tensor(dim_embedding, dtype=torch.float32))
+            self.scale_factor = math.sqrt(dim_embedding)
         else:
             self.scale_factor = 1.0
 

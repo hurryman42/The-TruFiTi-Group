@@ -13,4 +13,5 @@ __all__ = [
     "load_char_tokenizer",
     "load_bpe_hugging_face_tokenizer",
     "encode_texts",
+    "wandb_transfomer_config_override",
 ]

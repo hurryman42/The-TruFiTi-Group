@@ -9,6 +9,8 @@ class PositionalEncoding(nn.Module):
     Implementation of the Sinusoidal Positional Encoding, see "Attention Is All You Need"
     """
 
+    position_encoding_table: torch.Tensor
+
     def __init__(
         self,
         dim_embedding: int,

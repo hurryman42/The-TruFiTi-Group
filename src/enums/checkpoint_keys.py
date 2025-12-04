@@ -14,3 +14,4 @@ class CheckpointEnum(StrEnum):
     FF_HIDDEN_DIM = "ff_hidden_dim"
     DROPOUT = "dropout"
     TOKENIZER_TYPE = "tokenizer_type"
+    DATA_SEED = "data_seed"

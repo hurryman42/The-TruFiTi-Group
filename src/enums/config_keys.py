@@ -32,9 +32,12 @@ class TrainingEnum(StrEnum):
     MAX_ITERS = "max_iters"
     EVAL_INTERVAL = "eval_interval"
     EVAL_ITERS = "eval_iters"
+    WARMUP_ITERS = "warmup_iters"
 
 
 class DataConfigEnum(StrEnum):
     TRAIN_SIZE = "train_size"
     VAL_SIZE = "val_size"
+    TEST_SIZE = "test_size"
+    SEED = "seed"
     FILE = "file"

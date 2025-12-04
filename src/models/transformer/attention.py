@@ -14,28 +14,32 @@ class SelfAttentionHead(nn.Module):
 
     def forward(self, x):
         batch_size, seq_len, embedding_dimension = x.shape
-        K = self.key(x)     # (batch, seq, head_dim)
-        Q = self.query(x)   # (batch, seq, head_dim)
-        V = self.value(x)   # (batch, seq, head_dim)
+        K = self.key(x)  # (batch, seq, head_dim)
+        Q = self.query(x)  # (batch, seq, head_dim)
+        V = self.value(x)  # (batch, seq, head_dim)
 
-        attention_scores = Q @ K.transpose(-2, -1) / (self.head_dimension ** 0.5)  # =(QK^T)/(\sqrt{d}) (batch, seq, seq)
+        # =(QK^T)/(\sqrt{d}) (batch, seq, seq)
+        attention_scores = Q @ K.transpose(-2, -1) / (self.head_dimension**0.5)
 
         # causal mask (blocks out the future)
-        attention_scores = attention_scores.masked_fill(self.mask[:seq_len, :seq_len], float('-inf'))    # (batch, seq, seq)
+        # (batch, seq, seq)
+        attention_scores = attention_scores.masked_fill(self.mask[:seq_len, :seq_len], float("-inf"))
 
-        attention_probabilities = F.softmax(attention_scores, dim=-1)           # (batch, seq, seq)
+        # (batch, seq, seq)
+        attention_probabilities = F.softmax(attention_scores, dim=-1)
         return attention_probabilities @ V
 
 
 class MultiHeadAttention(nn.Module):
     def __init__(self, num_heads, embedding_dimension, head_dimension, block_size):
         super().__init__()
-        self.heads = nn.ModuleList([
-            SelfAttentionHead(embedding_dimension, head_dimension, block_size) for _ in range(num_heads)
-        ])
-        self.proj = nn.Linear(num_heads * head_dimension, embedding_dimension) # output projection: combine multiple heads
+        self.heads = nn.ModuleList(
+            [SelfAttentionHead(embedding_dimension, head_dimension, block_size) for _ in range(num_heads)]
+        )
+        # output projection: combine multiple heads
+        self.proj = nn.Linear(num_heads * head_dimension, embedding_dimension)
 
     def forward(self, x):
-        out = torch.cat([h(x) for h in self.heads], dim=-1) # runs each head in parallel, then concatenates
+        out = torch.cat([h(x) for h in self.heads], dim=-1)  # runs each head in parallel, then concatenates
         out = self.proj(out)
         return out

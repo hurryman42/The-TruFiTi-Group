@@ -1,8 +1,8 @@
+from pathlib import Path
+
 import gradio as gr
 
-from pathlib import Path
-from src.generation.generate_transformer import load_model, generate
-
+from src.generation.generate_transformer import generate, load_model
 
 BASE_DIR = Path(__file__).parent.parent.parent
 MODEL_PATH = BASE_DIR / "models" / "transformer_6.8M.pt"
@@ -10,14 +10,7 @@ MODEL_PATH = BASE_DIR / "models" / "transformer_6.8M.pt"
 
 def review_from_synopsis(synopsis):
     prompt = f"Synopsis: {synopsis}\nReview:"
-    review = generate(
-        model,
-        tokenizer,
-        tokenizer_type,
-        device,
-        prompt=prompt,
-        length=200
-    )
+    review = generate(model, tokenizer, tokenizer_type, device, prompt=prompt, length=200)
     return review
 
 
@@ -66,17 +59,10 @@ if __name__ == "__main__":
     """
 
     with gr.Blocks(css=custom_css) as demo:
-        gr.Markdown(
-            "# <span style='color:#00C030;'>★</span> Letterboxd-style Film Log Demo",
-            elem_id="main-card"
-        )
+        gr.Markdown("# <span style='color:#00C030;'>★</span> Letterboxd-style Film Log Demo", elem_id="main-card")
 
         with gr.Row():
-            synopsis_input = gr.Textbox(
-                label="Paste the film's synopsis",
-                lines=5,
-                interactive=True
-            )
+            synopsis_input = gr.Textbox(label="Paste the film's synopsis", lines=5, interactive=True)
 
         gr.Markdown("Rate it:")
         # Stars UI + hidden input for current rating
@@ -114,21 +100,11 @@ if __name__ == "__main__":
             generate_button = gr.Button("Generate Review", elem_id="main-card")
 
         gr.Markdown("Generated Review")
-        generated_review = gr.Textbox(
-            lines=6,
-            label="",
-            elem_id="review-output",
-            interactive=False
-        )
+        generated_review = gr.Textbox(lines=6, label="", elem_id="review-output", interactive=False)
 
-        generate_button.click(
-            review_from_synopsis,
-            inputs=synopsis_input,
-            outputs=generated_review
-        )
+        generate_button.click(review_from_synopsis, inputs=synopsis_input, outputs=generated_review)
 
-
-    '''
+    """
     with gr.Blocks(theme=gr.themes.Soft()) as demo:
         gr.Markdown("# FilmCriticLM")
         with gr.Row():
@@ -160,6 +136,6 @@ if __name__ == "__main__":
             "<sub>Note: Your star rating is only shown, not used as input. <br/>\
             For demo: Paste a synopsis and see how the model reviews the movie!</sub>"
         )
-    '''
+    """
 
     demo.launch()
