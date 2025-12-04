@@ -1,13 +1,12 @@
 # downloads Letterboxd dataset & runs data_filter.py on it
 
-MODEL_DIR := models
 DATA_DIR := data
 
 DATA_FILE := $(DATA_DIR)/letterboxd_full.jsonl
 SRC_FILE := src/data/data_filter.py
 
 DATASET_URL := https://huggingface.co/datasets/pkchwy/letterboxd-all-movie-data/resolve/main/full_dump.jsonl
-FASTTEXT_MODEL := $(MODEL_DIR)/lid.176.ftz
+FASTTEXT_MODEL := $(DATA_DIR)/lid.176.ftz
 FASTTEXT_MODEL_URL := https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.ftz
 
 MIN_SYNOPSIS_WORDS ?= 0
@@ -28,7 +27,7 @@ check-deps:
 
 download-fasttext:
 	@echo "Downloading FastText language ID model..."
-	@mkdir -p $(MODEL_DIR)
+	@mkdir -p $(DATA_DIR)
 	@curl -L -o $(FASTTEXT_MODEL) $(FASTTEXT_MODEL_URL)
 	@echo "\033[0;32mFastText model saved to $(FASTTEXT_MODEL)\033[0m"
 

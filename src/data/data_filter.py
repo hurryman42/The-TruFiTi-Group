@@ -5,28 +5,28 @@ import json
 import os
 import re
 
+DEFAULT_MIN_REVIEW_WORDS=15
+DEFAULT_MIN_SYNOPSIS_WORDS=0
+DEFAULT_MAX_EMOJIS=5
+DEFAULT_MAX_NON_LATIN_CHARS=20
 
-BAD_PATTERNS = [
-    re.compile(r"this review may contain spoilers"),  # "This review may contain spoilers. I can handle the truth."
-    re.compile(r"english version below"),  # "Deutsche Kritik oben. English Version below ..."
-    re.compile(r"^starring:"),  # "Starring: Jackie Chan, Chris Tucker, Tom Wilkinson"
-    re.compile(r"^seen (at|via|on)"),  # "Seen via Panic Fest 2023" or "Seen at the cinema"
-    re.compile(r"^watched (at|via|with|on)"),  # "Watched with the Golden Reel Gin Joint"
-    re.compile(r"^part of (my|the)"),  # "Part of my Japanese New Wave Top 200"
-    re.compile(r"challenge$"),  # "All Disney Features and Shorts Challenge"
-    re.compile(r"^review from"),  # "Review from my VOD column 'This Week on Demand'"
-    re.compile(r"watchlist$"),  # "French Film Noir Watchlist"
-    re.compile(r"^action! -"),  # "ACTION! - KILLER MIKE"
-]
+BAD_PATTERNS = re.compile(
+    r"(this review may contain spoilers"  # "This review may contain spoilers. I can handle the truth."
+    r"|english version below"  # "Deutsche Kritik oben. English Version below ..."
+    r"|^starring:"  # "Starring: Jackie Chan, Chris Tucker, Tom Wilkinson"
+    r"|^seen (?:at|via|on)"  # "Seen via Panic Fest 2023" or "Seen at the cinema"
+    r"|^watched (?:at|via|with|on)"  # "Watched with the Golden Reel Gin Joint"
+    r"|^part of (?:my|the)"  # "Part of my Japanese New Wave Top 200"
+    r"|challenge$"  # "All Disney Features and Shorts Challenge"
+    r"|^review from"  # "Review from my VOD column 'This Week on Demand'"
+    r"|watchlist$"  # "French Film Noir Watchlist"
+    r"|^action! -)"  # "ACTION! - KILLER MIKE"
+)
 
 
 def count_non_latin_chars(text):
-    if not text:
-        return 0
-    pattern = re.compile(
-        r"[^A-Za-z0-9\s.,!?;:'\"()\-\n]"
-    )  # any character not in Latin letters, digits, or basic punctuation
-    return len(pattern.findall(text))
+    allowed = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,!?;:'\"()-\n")
+    return sum(c not in allowed for c in text)
 
 
 def count_emojis(text):
@@ -54,8 +54,6 @@ def get_hash(text):
 
 
 def is_english(text: str, model) -> bool:
-    if not text or len(text.strip()) < 5:
-        return False
     try:
         labels, probs = model.predict(text.replace("\n", " ").strip(), k=1)
         if not labels:
@@ -69,8 +67,6 @@ def is_valid_review(
     text,
     max_non_latin_chars,
     model,
-    max_emojis=5,
-    min_words=15,
 ):
     if not text or not text.strip():
         return False
@@ -78,14 +74,13 @@ def is_valid_review(
     text_lower = text.lower().strip()
 
     word_count = len(text_lower.split())
-    if word_count < min_words:
+    if word_count < DEFAULT_MIN_REVIEW_WORDS:
         return False
 
-    for pattern in BAD_PATTERNS:
-        if pattern.search(text_lower):
-            return False
+    if BAD_PATTERNS.search(text_lower):
+        return False
 
-    if count_emojis(text) > max_emojis:
+    if count_emojis(text) > DEFAULT_MAX_EMOJIS:
         return False
 
     if count_non_latin_chars(text) > max_non_latin_chars:
@@ -141,18 +136,18 @@ def main():
     parser.add_argument(
         "--min-synopsis-words",
         type=int,
-        default=0,
-        help="Minimum number of words required in synopsis (default: 0, no filtering)",
+        default=DEFAULT_MIN_SYNOPSIS_WORDS,
+        help=f"Minimum number of words required in synopsis (default: {DEFAULT_MIN_SYNOPSIS_WORDS}, no filtering)",
     )
     parser.add_argument(
         "--max-non-latin-chars",
         type=int,
-        default=20,
-        help=f"Maximum number of non-Latin characters allowed per review (default: {20})",
+        default=DEFAULT_MAX_NON_LATIN_CHARS,
+        help=f"Maximum number of non-Latin characters allowed per review (default: {DEFAULT_MAX_NON_LATIN_CHARS})",
     )
     args = parser.parse_args()
 
-    model = fasttext.load_model("models/lid.176.ftz")
+    model = fasttext.load_model("data/lid.176.ftz")
 
     output_filename = f"letterboxd_filtered.jsonl"
     if args.min_synopsis_words > 0:
@@ -183,8 +178,9 @@ def main():
                     filtered_reviews += len(filtered["review_texts"])
                 else:
                     skipped_count += 1
-            except Exception as e:
-                print(f"Skipped line {index} (Error: {e})")
+            except json.JSONDecodeError as e:
+                print(f"Skipped invalid JSON at line {index}: {e}")
+                continue
 
     print("\n---------- Processing complete! --- Summary: ----------")
     print(f"Processed: {processed_count} entries")

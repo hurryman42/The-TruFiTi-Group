@@ -4,4 +4,3 @@ __pycache__/
 /data/
 .DS_Store
 wandb/
-models/lid.176.ftz
