@@ -1,6 +1,6 @@
 import argparse
 import json
-from random import random
+import random
 
 import torch
 
@@ -134,6 +134,8 @@ def main(config: dict):
         tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
         vocab_size = tokenizer.get_vocab_size()
 
+    data_cfg = config[SectionEnum.DATA]
+
     data_path = get_data_path(config)
     texts = read_file_only_reviews(data_path)
     random.seed(data_cfg[DataConfigEnum.SEED])
@@ -141,7 +143,6 @@ def main(config: dict):
     encoded = encode_texts(texts, tokenizer, tokenizer_type)
     print(f"Total tokens: {len(encoded):,}".replace(",", "."))
 
-    data_cfg = config[SectionEnum.DATA]
     train_data, val_data, _ = train_val_test_split(
         encoded,
         data_cfg[DataConfigEnum.TRAIN_SIZE],

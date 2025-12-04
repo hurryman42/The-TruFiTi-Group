@@ -4,7 +4,6 @@ import json
 import os
 import re
 import sys
-from langdetect import detect, LangDetectException
 
 DEFAULT_MIN_SYNOPSIS_WORDS = 0
 DEFAULT_MAX_NON_LATIN_CHARS = 20
@@ -57,11 +56,9 @@ def has_sufficient_synopsis(synopsis, min_words):
 def get_hash(text):
     return hashlib.md5(text.lower().strip().encode("utf-8")).hexdigest()
 
-def is_english(text: str) -> bool:
-    try:
-        return detect(text) == 'en'
-    except LangDetectException:
-        return False
+
+# def is_english(text: str) -> bool:
+
 
 def is_valid_review(
     text,
@@ -87,9 +84,9 @@ def is_valid_review(
 
     if count_non_latin_chars(text) > max_non_latin_chars:
         return False
-    
-    if not is_english(text):
-        return False
+
+    # if not is_english(text):
+    #     return False
 
     return True
 
