@@ -1,7 +1,8 @@
 from src.evaluation.distinct_n_metric import DistinctNMetric
 
 def test_distinct_n_metric():
-    generated = ["A B A B", "B A B A"]
+    generated = ["<BOS> A B A B <EOS>", "<BOS> B A B A <EOS>"]
+
     metric = DistinctNMetric(n=1)
     result = metric.compute(generated)
     assert result.name == "distinct-1"
@@ -10,5 +11,6 @@ def test_distinct_n_metric():
 
     metric2 = DistinctNMetric(n=2)
     result2 = metric2.compute(generated)
+    assert result.name == "distinct-2"
     # for bigrams: 'A B', 'B A'
     assert abs(result2.score - 1.0) < 1e-5
