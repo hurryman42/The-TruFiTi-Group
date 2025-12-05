@@ -1,9 +1,10 @@
 import argparse
-import fasttext
 import hashlib
 import json
 import os
 import re
+
+from fast_langdetect import LangDetectConfig, LangDetector
 
 DEFAULT_MIN_REVIEW_WORDS=15
 DEFAULT_MIN_SYNOPSIS_WORDS=0
@@ -45,36 +46,41 @@ def count_emojis(text):
 def has_sufficient_synopsis(synopsis, min_words):
     if not synopsis or not isinstance(synopsis, str):
         return False
-    word_count = len(synopsis.split())
-    return word_count >= min_words
+    return len(synopsis.split()) >= min_words
 
 
 def get_hash(text):
     return hashlib.md5(text.lower().strip().encode("utf-8")).hexdigest()
 
 
-def is_english(text: str, model) -> bool:
+# fast-langdetect returns dict like: {"lang": "en", "score": 0.98}
+def is_english(text: str, detector) -> bool:
     try:
-        labels, probs = model.predict(text.replace("\n", " ").strip(), k=1)
-        if not labels:
+        res = detector.detect(text)
+        if isinstance(res, list):
+            res = res[0]
+        if not res or 'lang' not in res:
             return False
-        return labels[0] == "__label__en" and float(probs[0]) >= 0.60
-    except (ValueError, TypeError, IndexError):
+        lang = res.get("lang")
+        score = float(res.get("score", 0.0))
+        is_en = lang == "en" and score >= 0.60
+        return is_en
+    except Exception as e:
+        print("[ERROR in is_english]", e)
         return False
 
 
 def is_valid_review(
     text,
     max_non_latin_chars,
-    model,
+    detector,
 ):
     if not text or not text.strip():
         return False
 
     text_lower = text.lower().strip()
 
-    word_count = len(text_lower.split())
-    if word_count < DEFAULT_MIN_REVIEW_WORDS:
+    if len(text_lower.split()) < DEFAULT_MIN_REVIEW_WORDS:
         return False
 
     if BAD_PATTERNS.search(text_lower):
@@ -86,7 +92,7 @@ def is_valid_review(
     if count_non_latin_chars(text) > max_non_latin_chars:
         return False
 
-    if not is_english(text, model):
+    if not is_english(text, detector):
         return False
 
     return True
@@ -97,14 +103,14 @@ def filter_per_film(
     min_synopsis_words,
     max_non_latin_chars,
     seen_hashes,
-    model,
+    detector,
 ):
     reviews = data.get("reviews", [])
     filtered_reviews = []
 
     for r in reviews:
         review_text = r.get("review_text", "")
-        if not is_valid_review(review_text, max_non_latin_chars, model):
+        if not is_valid_review(review_text, max_non_latin_chars, detector):
             continue
 
         text_hash = get_hash(review_text)
@@ -130,7 +136,8 @@ def filter_per_film(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Filter Letterboxd data by film or review", formatter_class=argparse.RawDescriptionHelpFormatter
+        description="Filter Letterboxd data by film or review",
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("input_file", help="Input JSONL file path")
     parser.add_argument(
@@ -147,7 +154,8 @@ def main():
     )
     args = parser.parse_args()
 
-    model = fasttext.load_model("data/lid.176.ftz")
+    config = LangDetectConfig(cache_dir="data")
+    detector = LangDetector(config=config)  # downloads or loads fast models automatically
 
     output_filename = f"letterboxd_filtered.jsonl"
     if args.min_synopsis_words > 0:
@@ -169,7 +177,7 @@ def main():
                 total_films += 1
                 total_reviews += len(data.get("reviews", []))
                 filtered = filter_per_film(
-                    data, args.min_synopsis_words, args.max_non_latin_chars, seen_hashes, model
+                    data, args.min_synopsis_words, args.max_non_latin_chars, seen_hashes, detector
                 )
                 if filtered:
                     outfile.write(json.dumps(filtered, ensure_ascii=False) + "\n")

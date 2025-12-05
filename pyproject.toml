@@ -23,8 +23,9 @@ dependencies = [
     "tqdm>=4.67.1",
     "wandb>=0.23.0",
     "langdetect>=1.0.9",
-    "fasttext-wheel>=0.9.2",
     "numpy>=1.26.4",
+    "fast-langdetect>=1.0.0",
+    "fasttext-wheel>=0.9.2",
 ]
 
 [dependency-groups]
