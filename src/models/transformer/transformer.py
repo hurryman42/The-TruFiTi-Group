@@ -52,8 +52,13 @@ class TransformerDecoderOnly(nn.Module):
         return logits
 
     @torch.no_grad()  # <-- makes sure that no gradient history is built up during generation
-    def generate(self, index, max_new_tokens, temperature=1.0, top_k=None):
+    def generate(self, index, max_new_tokens, eos_token_id, temperature=1.0, top_k=None):
+        batch_size = index.size(0)
+        is_generating = torch.ones(batch_size, dtype=torch.bool, device=index.device)
+
         for _ in range(max_new_tokens):
+            if not is_generating.any():
+                break
             # crop to block_size if sequence context is growing too long
             index_conditional = index if index.size(1) <= self.block_size else index[:, -self.block_size :]
             # (batch_size, seq_length, vocab_size)
@@ -72,5 +77,7 @@ class TransformerDecoderOnly(nn.Module):
             next_token = torch.multinomial(probabilities, num_samples=1)
             # append sampled index to running sequence
             index = torch.cat((index, next_token), dim=1)
+
+            is_generating = is_generating & (next_token.squeeze(-1) != eos_token_id)
 
         return index
