@@ -139,9 +139,6 @@ def train_loop(
             x, y = get_batch(data[DataSplitEnum.TRAIN], seq_len, batch_size, device)
             loss = forward_pass(model, x, y)
 
-            if step % 50 == 0:
-                print(f"Step {step}: loss = {loss.item():.4f}")
-
             optimizer.zero_grad(set_to_none=True)
 
             loss.backward()
