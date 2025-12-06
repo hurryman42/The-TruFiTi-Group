@@ -6,10 +6,10 @@ import re
 
 from lingua import Language, LanguageDetectorBuilder
 
-DEFAULT_MIN_REVIEW_WORDS=15
-DEFAULT_MIN_SYNOPSIS_WORDS=0
-DEFAULT_MAX_EMOJIS=5
-DEFAULT_MAX_NON_LATIN_CHARS=20
+DEFAULT_MIN_REVIEW_WORDS = 15
+DEFAULT_MIN_SYNOPSIS_WORDS = 0
+DEFAULT_MAX_EMOJIS = 5
+DEFAULT_MAX_NON_LATIN_CHARS = 20
 
 BAD_PATTERNS = re.compile(
     r"(this review may contain spoilers"  # "This review may contain spoilers. I can handle the truth."
@@ -129,8 +129,7 @@ def filter_per_film(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Filter Letterboxd data by film or review",
-        formatter_class=argparse.RawDescriptionHelpFormatter
+        description="Filter Letterboxd data by film or review", formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("input_file", help="Input JSONL file path")
     parser.add_argument(
