@@ -4,7 +4,7 @@ import json
 import os
 import re
 
-from fast_langdetect import LangDetectConfig, LangDetector
+from lingua import Language, LanguageDetectorBuilder
 
 DEFAULT_MIN_REVIEW_WORDS=15
 DEFAULT_MIN_SYNOPSIS_WORDS=0
@@ -53,18 +53,11 @@ def get_hash(text):
     return hashlib.md5(text.lower().strip().encode("utf-8")).hexdigest()
 
 
-# fast-langdetect returns dict like: {"lang": "en", "score": 0.98}
+# lingua-py returns language detection in the form of a language object, like 'Language.ENGLISH'
 def is_english(text: str, detector) -> bool:
     try:
-        res = detector.detect(text)
-        if isinstance(res, list):
-            res = res[0]
-        if not res or 'lang' not in res:
-            return False
-        lang = res.get("lang")
-        score = float(res.get("score", 0.0))
-        is_en = lang == "en" and score >= 0.60
-        return is_en
+        lang = detector.detect_language_of(text)
+        return lang == Language.ENGLISH
     except Exception as e:
         print("[ERROR in is_english]", e)
         return False
@@ -154,8 +147,7 @@ def main():
     )
     args = parser.parse_args()
 
-    config = LangDetectConfig(cache_dir="data")
-    detector = LangDetector(config=config)  # downloads or loads fast models automatically
+    detector = LanguageDetectorBuilder.from_languages(Language.ENGLISH).with_preloaded_language_models().build()
 
     output_filename = f"letterboxd_filtered.jsonl"
     if args.min_synopsis_words > 0:
