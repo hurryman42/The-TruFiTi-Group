@@ -1,9 +1,6 @@
-from typing import List
+from src.enums.types import SpecialTokensEnum
 from .base_evaluation_metric import BaseEvaluationMetric, MetricResult
 
-
-def get_ngrams(tokens: List[str], n: int):
-    return [tuple(tokens[i:i+n]) for i in range(len(tokens) - n + 1)]
 
 class DistinctNMetric(BaseEvaluationMetric):
     def __init__(self, n: int = 1):
@@ -14,18 +11,21 @@ class DistinctNMetric(BaseEvaluationMetric):
     def name(self) -> str:
         return f"distinct-{self.n}"
 
-    def compute(self, generated: List[str], references: List[List[str]] = None) -> MetricResult:
+    @staticmethod
+    def _get_ngrams(tokens: list[str], n: int) -> list[tuple[str, ...]]:
+        return [tuple(tokens[i:i + n]) for i in range(len(tokens) - n + 1)]
+
+    def compute(self, generated: list[str], references: list[list[str]] | None = None) -> MetricResult:
         total_ngrams = 0
-        unique_ngrams = set()
-        all_ngrams = []
+        unique_ngrams: set[tuple[str, ...]] = set()
 
         for sequence in generated:
-            tokens = sequence.strip().split()
-            tokens = [t for t in tokens if t not in {"<BOS>", "<EOS>"}]
-            ngrams = get_ngrams(tokens, self.n)
+            words = sequence.strip().split()
+            words = [w for w in words if w not in {SpecialTokensEnum.BOS, SpecialTokensEnum.EOS}]
+
+            ngrams = self._get_ngrams(words, self.n)
             total_ngrams += len(ngrams)
             unique_ngrams.update(ngrams)
-            all_ngrams.extend(ngrams)
 
         score = len(unique_ngrams) / total_ngrams if total_ngrams > 0 else 0.0
 
@@ -35,7 +35,6 @@ class DistinctNMetric(BaseEvaluationMetric):
             details={
                 "unique_ngrams": len(unique_ngrams),
                 "total_ngrams": total_ngrams,
-                "distinct_ngrams": unique_ngrams,
                 "n": self.n,
             }
         )
