@@ -23,6 +23,7 @@ class TransformerModelEnum(StrEnum):
     DROPOUT = "dropout"
     FF_HIDDEN_DIM = "ff_hidden_dim"
     HEAD_DIM = "head_dim"
+    USE_ROPE = "use_rope"
 
 
 class TrainingEnum(StrEnum):

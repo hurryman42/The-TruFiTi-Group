@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from src.models.embeddings.positional_encoding import PositionalEncoding
+from src.models.embeddings.token_embedding import TokenEmbedding
 from src.models.transformer.block import TransformerBlock
 
 
@@ -16,14 +18,25 @@ class TransformerDecoderOnly(nn.Module):
         max_seq_len,
         ff_hidden_dimension,
         dropout=0.1,
+        use_rope=False,
     ):
         super().__init__()
-        self.token_embedding = nn.Embedding(vocab_size, embedding_dimension)
-        self.position_embedding = nn.Embedding(max_seq_len, embedding_dimension)
+        self.use_rope = use_rope
+        self.token_embedding = TokenEmbedding(vocab_size, embedding_dimension, scale=not use_rope)
+
+        if not use_rope:
+            self.position_embedding = PositionalEncoding(max_seq_len, embedding_dimension, dropout)
+
         self.blocks = nn.ModuleList(
             [
                 TransformerBlock(
-                    embedding_dimension, num_heads, head_dimension, max_seq_len, ff_hidden_dimension, dropout
+                    embedding_dimension,
+                    num_heads,
+                    head_dimension,
+                    max_seq_len,
+                    ff_hidden_dimension,
+                    dropout,
+                    use_rope,
                 )
                 for _ in range(num_blocks)
             ]
@@ -39,10 +52,9 @@ class TransformerDecoderOnly(nn.Module):
             seq_length <= self.block_size
         ), f"Cannot forward sequence of length {seq_length}, block size is only {self.block_size}"
 
-        token_emb = self.token_embedding(index)  # (batch_size, seq_length, embed_dim)
-        pos = torch.arange(seq_length, device=index.device)  # (seq_length,)
-        pos_emb = self.position_embedding(pos).unsqueeze(0)  # (1, seq_length, embedding_dimension)
-        x = token_emb + pos_emb  # (batch_size, seq_length, embedding_dimension)
+        x = self.token_embedding(index)  # (batch_size, seq_length, embed_dim)
+        if not self.use_rope:
+            x = self.positional_encoding(x)
 
         for block in self.blocks:
             x = block(x)
