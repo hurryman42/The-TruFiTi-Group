@@ -149,9 +149,9 @@ def main():
 
     detector = LanguageDetectorBuilder.from_languages(Language.ENGLISH).with_preloaded_language_models().build()
 
-    output_filename = f"letterboxd_filtered.jsonl"
+    output_filename = "letterboxd_filtered.jsonl"
     if args.min_synopsis_words > 0:
-        output_filename = f"letterboxd_filtered_short_synopsis.jsonl"
+        output_filename = "letterboxd_filtered_short_synopsis.jsonl"
     output_file = os.path.join(os.path.dirname(args.input_file), output_filename)
 
     skipped_count = 0

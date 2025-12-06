@@ -5,6 +5,7 @@ model:
   num_blocks: 4
   seq_len: 128
   dropout: 0.1
+  use_rope: False
 
 tokenizer:
   type: bpe_hugging_face
@@ -22,6 +23,6 @@ data:
   train_size: 0.8
   val_size: 0.1
   test_size: 0.1
-  file: letterboxd_filtered_short_synopsis_film.jsonl
+  file: letterboxd_filtered.jsonl
   seed: 42
 

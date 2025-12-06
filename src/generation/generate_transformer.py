@@ -44,6 +44,7 @@ def load_model(model_path: Path):
         max_seq_len=checkpoint[CheckpointEnum.SEQ_LEN],
         ff_hidden_dimension=checkpoint[CheckpointEnum.FF_HIDDEN_DIM],
         dropout=checkpoint[CheckpointEnum.DROPOUT],
+        use_rope=checkpoint.get(CheckpointEnum.USE_ROPE, False),
     ).to(device)
 
     model.load_state_dict(checkpoint[CheckpointEnum.MODEL])
@@ -66,11 +67,16 @@ def generate(model, tokenizer, tokenizer_type, device, prompt: str = "", length:
             bos_id = tokenizer.token_to_id(SpecialTokensEnum.BOS)
             idx = torch.tensor([[bos_id]], dtype=torch.long, device=device)
 
-    generated = model.generate(idx, length)
+    eos_id = tokenizer.token_to_id(SpecialTokensEnum.EOS)
+    generated = model.generate(idx, length, eos_id)
 
+    tokens = generated[0].tolist()
     if tokenizer_type == TokenizerTypeEnum.CHAR:
-        return tokenizer.decode(generated[0].tolist())
-    return tokenizer.decode(generated[0].tolist())
+        return tokenizer.decode(tokens)
+
+    if eos_id in tokens:
+        tokens = tokens[: tokens.index(eos_id)]
+    return tokenizer.decode(tokens)
 
 
 if __name__ == "__main__":

@@ -25,6 +25,8 @@ dependencies = [
     "langdetect>=1.0.9",
     "numpy>=1.26.4",
     "lingua-language-detector>=2.1.1",
+    "torchtune>=0.6.1",
+    "torchao>=0.14.1",
 ]
 
 [dependency-groups]

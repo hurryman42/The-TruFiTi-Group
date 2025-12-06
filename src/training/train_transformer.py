@@ -162,6 +162,7 @@ def main(config: dict):
         max_seq_len=model_cfg[TransformerModelEnum.SEQ_LEN],
         ff_hidden_dimension=model_cfg[TransformerModelEnum.FF_HIDDEN_DIM],
         dropout=model_cfg[TransformerModelEnum.DROPOUT],
+        use_rope=model_cfg[TransformerModelEnum.USE_ROPE],
     ).to(device)
 
     num_params = sum(p.numel() for p in model.parameters())

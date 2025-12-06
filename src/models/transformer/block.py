@@ -5,10 +5,21 @@ from src.models.transformer.feed_forward import FeedForward
 
 
 class TransformerBlock(nn.Module):
-    def __init__(self, embedding_dimension, num_heads, head_dimension, max_seq_len, ff_hidden_dimension, dropout=0.1):
+    def __init__(
+        self,
+        embedding_dimension,
+        num_heads,
+        head_dimension,
+        max_seq_len,
+        ff_hidden_dimension,
+        dropout,
+        use_rope,
+    ):
         super().__init__()
         self.layernorm1 = nn.LayerNorm(embedding_dimension)
-        self.attention = MultiHeadAttention(num_heads, embedding_dimension, head_dimension, max_seq_len)
+        self.attention = MultiHeadAttention(
+            num_heads, embedding_dimension, head_dimension, max_seq_len, dropout, use_rope
+        )
         self.layernorm2 = nn.LayerNorm(embedding_dimension)
         self.feedforward = FeedForward(embedding_dimension, ff_hidden_dimension, dropout)
 
