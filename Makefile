@@ -11,7 +11,7 @@ MIN_SYNOPSIS_WORDS ?= 0
 MAX_NON_LATIN_CHARS ?= 0
 
 
-data: check-deps download-fasttext download-dataset verify-download run-filter clean
+data: check-deps download-dataset verify-download run-filter clean
 
 data-no-filter: MIN_SYNOPSIS_WORDS=0
 data-no-filter: MAX_NON_LATIN_CHARS=99999
