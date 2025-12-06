@@ -6,14 +6,12 @@ DATA_FILE := $(DATA_DIR)/letterboxd_full.jsonl
 SRC_FILE := src/data/data_filter.py
 
 DATASET_URL := https://huggingface.co/datasets/pkchwy/letterboxd-all-movie-data/resolve/main/full_dump.jsonl
-FASTTEXT_MODEL := $(DATA_DIR)/lid.176.ftz
-FASTTEXT_MODEL_URL := https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.ftz
 
 MIN_SYNOPSIS_WORDS ?= 0
 MAX_NON_LATIN_CHARS ?= 0
 
 
-data: check-deps download-fasttext download-dataset verify-downloads run-filter clean
+data: check-deps download-dataset verify-download run-filter clean
 
 data-no-filter: MIN_SYNOPSIS_WORDS=0
 data-no-filter: MAX_NON_LATIN_CHARS=99999
@@ -25,12 +23,6 @@ check-deps:
 	@command -v python3 >/dev/null 2>&1 || { echo >&2 "\033[0;31mError: 'python3' is not installed. Please install it.\033[0m"; exit 1; }
 
 
-download-fasttext:
-	@echo "Downloading FastText language ID model..."
-	@mkdir -p $(DATA_DIR)
-	@curl -L -o $(FASTTEXT_MODEL) $(FASTTEXT_MODEL_URL)
-	@echo "\033[0;32mFastText model saved to $(FASTTEXT_MODEL)\033[0m"
-
 download-dataset:
 	@echo "Downloading dataset from Hugging Face..."
 	@mkdir -p $(DATA_DIR)
@@ -38,21 +30,13 @@ download-dataset:
 	@echo "\033[0;32mDataset saved to $(DATA_FILE)\033[0m"
 
 
-verify-downloads:
+verify-download:
 	@if [ ! -s "$(DATA_FILE)" ]; then \
 		echo "\033[0;31mError: Download failed or file is empty ($(DATA_FILE)).\033[0m"; \
 		rm -f "$(DATA_FILE)"; \
 		exit 1; \
 	else \
 		echo "\033[0;32mVerified: $(DATA_FILE) exists and is not empty.\033[0m"; \
-	fi
-
-	@if [ ! -s "$(FASTTEXT_MODEL)" ]; then \
-		echo "\033[0;31mError: FastText model missing or empty ($(FASTTEXT_MODEL)).\033[0m"; \
-		rm -f "$(FASTTEXT_MODEL)"; \
-		exit 1; \
-	else \
-		echo "\033[0;32mVerified: FastText model OK ($(FASTTEXT_MODEL)).\033[0m"; \
 	fi
 
 

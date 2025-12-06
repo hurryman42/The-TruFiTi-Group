@@ -4,6 +4,8 @@ import json
 import os
 import re
 
+from lingua import Language, LanguageDetectorBuilder
+
 DEFAULT_MIN_REVIEW_WORDS = 15
 DEFAULT_MIN_SYNOPSIS_WORDS = 0
 DEFAULT_MAX_EMOJIS = 5
@@ -44,37 +46,34 @@ def count_emojis(text):
 def has_sufficient_synopsis(synopsis, min_words):
     if not synopsis or not isinstance(synopsis, str):
         return False
-    word_count = len(synopsis.split())
-    return word_count >= min_words
+    return len(synopsis.split()) >= min_words
 
 
 def get_hash(text):
     return hashlib.md5(text.lower().strip().encode("utf-8")).hexdigest()
 
 
-def is_english(text: str, model) -> bool:
-    return True
-    # try:
-    #     labels, probs = model.predict(text.replace("\n", " ").strip(), k=1)
-    #     if not labels:
-    #         return False
-    #     return labels[0] == "__label__en" and float(probs[0]) >= 0.60
-    # except (ValueError, TypeError, IndexError):
-    #     return False
+# lingua-py returns language detection in the form of a language object, like 'Language.ENGLISH'
+def is_english(text: str, detector) -> bool:
+    try:
+        lang = detector.detect_language_of(text)
+        return lang == Language.ENGLISH
+    except Exception as e:
+        print("[ERROR in is_english]", e)
+        return False
 
 
 def is_valid_review(
     text,
     max_non_latin_chars,
-    model,
+    detector,
 ):
     if not text or not text.strip():
         return False
 
     text_lower = text.lower().strip()
 
-    word_count = len(text_lower.split())
-    if word_count < DEFAULT_MIN_REVIEW_WORDS:
+    if len(text_lower.split()) < DEFAULT_MIN_REVIEW_WORDS:
         return False
 
     if BAD_PATTERNS.search(text_lower):
@@ -86,7 +85,7 @@ def is_valid_review(
     if count_non_latin_chars(text) > max_non_latin_chars:
         return False
 
-    if not is_english(text, model):
+    if not is_english(text, detector):
         return False
 
     return True
@@ -97,14 +96,14 @@ def filter_per_film(
     min_synopsis_words,
     max_non_latin_chars,
     seen_hashes,
-    model,
+    detector,
 ):
     reviews = data.get("reviews", [])
     filtered_reviews = []
 
     for r in reviews:
         review_text = r.get("review_text", "")
-        if not is_valid_review(review_text, max_non_latin_chars, model):
+        if not is_valid_review(review_text, max_non_latin_chars, detector):
             continue
 
         text_hash = get_hash(review_text)
@@ -147,7 +146,7 @@ def main():
     )
     args = parser.parse_args()
 
-    model = None
+    detector = LanguageDetectorBuilder.from_languages(Language.ENGLISH).with_preloaded_language_models().build()
 
     output_filename = "letterboxd_filtered.jsonl"
     if args.min_synopsis_words > 0:
@@ -168,7 +167,9 @@ def main():
                 data = json.loads(line)
                 total_films += 1
                 total_reviews += len(data.get("reviews", []))
-                filtered = filter_per_film(data, args.min_synopsis_words, args.max_non_latin_chars, seen_hashes, model)
+                filtered = filter_per_film(
+                    data, args.min_synopsis_words, args.max_non_latin_chars, seen_hashes, detector
+                )
                 if filtered:
                     outfile.write(json.dumps(filtered, ensure_ascii=False) + "\n")
                     processed_count += 1
