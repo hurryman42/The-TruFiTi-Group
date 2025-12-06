@@ -1,14 +1,13 @@
 import argparse
-import fasttext
 import hashlib
 import json
 import os
 import re
 
-DEFAULT_MIN_REVIEW_WORDS=15
-DEFAULT_MIN_SYNOPSIS_WORDS=0
-DEFAULT_MAX_EMOJIS=5
-DEFAULT_MAX_NON_LATIN_CHARS=20
+DEFAULT_MIN_REVIEW_WORDS = 15
+DEFAULT_MIN_SYNOPSIS_WORDS = 0
+DEFAULT_MAX_EMOJIS = 5
+DEFAULT_MAX_NON_LATIN_CHARS = 20
 
 BAD_PATTERNS = re.compile(
     r"(this review may contain spoilers"  # "This review may contain spoilers. I can handle the truth."
@@ -54,13 +53,14 @@ def get_hash(text):
 
 
 def is_english(text: str, model) -> bool:
-    try:
-        labels, probs = model.predict(text.replace("\n", " ").strip(), k=1)
-        if not labels:
-            return False
-        return labels[0] == "__label__en" and float(probs[0]) >= 0.60
-    except (ValueError, TypeError, IndexError):
-        return False
+    return True
+    # try:
+    #     labels, probs = model.predict(text.replace("\n", " ").strip(), k=1)
+    #     if not labels:
+    #         return False
+    #     return labels[0] == "__label__en" and float(probs[0]) >= 0.60
+    # except (ValueError, TypeError, IndexError):
+    #     return False
 
 
 def is_valid_review(
@@ -147,11 +147,11 @@ def main():
     )
     args = parser.parse_args()
 
-    model = fasttext.load_model("data/lid.176.ftz")
+    model = None
 
-    output_filename = f"letterboxd_filtered.jsonl"
+    output_filename = "letterboxd_filtered.jsonl"
     if args.min_synopsis_words > 0:
-        output_filename = f"letterboxd_filtered_short_synopsis.jsonl"
+        output_filename = "letterboxd_filtered_short_synopsis.jsonl"
     output_file = os.path.join(os.path.dirname(args.input_file), output_filename)
 
     skipped_count = 0
@@ -168,9 +168,7 @@ def main():
                 data = json.loads(line)
                 total_films += 1
                 total_reviews += len(data.get("reviews", []))
-                filtered = filter_per_film(
-                    data, args.min_synopsis_words, args.max_non_latin_chars, seen_hashes, model
-                )
+                filtered = filter_per_film(data, args.min_synopsis_words, args.max_non_latin_chars, seen_hashes, model)
                 if filtered:
                     outfile.write(json.dumps(filtered, ensure_ascii=False) + "\n")
                     processed_count += 1
