@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchtune.modules import RotaryPositionalEmbeddings
+from torchtune.modules import RotaryPositionalEmbeddings  # type: ignore[import-untyped]
 
 
 class MultiHeadAttention(nn.Module):
