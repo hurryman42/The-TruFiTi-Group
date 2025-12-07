@@ -98,6 +98,8 @@ if __name__ == "__main__":
         data_cfg[DataConfigEnum.TEST_SIZE],
     )
 
+    assert test_texts is not None, "Test split configuration resulted in None."
+
     print(f"Test reviews: {len(test_texts)}")
 
     evaluate(

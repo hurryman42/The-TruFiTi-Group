@@ -1,4 +1,4 @@
-from evaluate import load
+from evaluate import load  # type: ignore[import-untyped]
 
 from .base_evaluation_metric import BaseEvaluationMetric, MetricResult
 
@@ -38,6 +38,5 @@ class BERTScoreMetric(BaseEvaluationMetric):
                 "precision": precision,
                 "recall": recall,
                 "f1": f1,
-                "model_type": self._model_type,
             },
         )
