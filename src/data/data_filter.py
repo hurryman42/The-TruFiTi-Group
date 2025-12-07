@@ -9,6 +9,8 @@ from lingua import Language, LanguageDetectorBuilder
 
 DEFAULT_MIN_REVIEW_WORDS = 15
 DEFAULT_MAX_EMOJIS = 5
+DEFAULT_MAX_WEIRD_CHARS = 10
+DEFAULT_MAX_REPETITION = 15
 
 BAD_PATTERNS = re.compile(
     r"(this review may contain spoilers"  # "This review may contain spoilers. I can handle the truth."
@@ -69,6 +71,24 @@ def is_english(text: str, detector) -> bool:
         return False
 
 
+def count_weird_chars(text):
+    weird = 0
+    for c in text:
+        cat = unicodedata.category(c)
+        # So = Symbol other (Braille)
+        # Mn = Mark nonspacing (Zalgo combining chars)
+        # Cf = Format
+        # Co = Private use
+        if cat in ("So", "Mn", "Cf", "Co"):
+            weird += 1
+    return weird
+
+
+def has_excessive_repetition(text, max_repeat):
+    pattern = rf"(.)\1{{{max_repeat},}}"
+    return bool(re.search(pattern, text))
+
+
 def is_valid_review(
     text,
     max_non_latin_chars,
@@ -89,6 +109,12 @@ def is_valid_review(
         return False
 
     if count_non_latin_script_chars(text) > max_non_latin_chars:
+        return False
+
+    if count_weird_chars(text) > DEFAULT_MAX_WEIRD_CHARS:
+        return False
+
+    if has_excessive_repetition(text, DEFAULT_MAX_REPETITION):
         return False
 
     if not is_english(text, detector):
@@ -153,7 +179,25 @@ def main():
     )
     args = parser.parse_args()
 
-    detector = LanguageDetectorBuilder.from_languages(Language.ENGLISH).with_preloaded_language_models().build()
+    detector = (
+        LanguageDetectorBuilder.from_languages(
+            Language.ENGLISH,
+            Language.SPANISH,
+            Language.FRENCH,
+            Language.GERMAN,
+            Language.PORTUGUESE,
+            Language.ITALIAN,
+            Language.DUTCH,
+            Language.SWEDISH,
+            Language.POLISH,
+            Language.RUSSIAN,
+            Language.JAPANESE,
+            Language.KOREAN,
+            Language.CHINESE,
+        )
+        .with_preloaded_language_models()
+        .build()
+    )
 
     output_filename = "letterboxd_filtered.jsonl"
     if args.min_synopsis_words > 0:

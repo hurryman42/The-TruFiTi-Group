@@ -12,8 +12,8 @@ from src.utils.data_loader import read_file_only_reviews
 # TODO choose tokenizer size in config file
 VOCAB_SIZE = 4000
 BASE_DIR = Path(__file__).resolve().parent.parent
-INPUT_FILE = BASE_DIR.parent / "data" / "letterboxd_filtered_film.jsonl"
-SAVE_PATH = BASE_DIR.parent / "tokenizer" / f"bpe_hugging_face_tokenizer_{VOCAB_SIZE}.json"
+INPUT_FILE = BASE_DIR.parent / "data" / "letterboxd_filtered.jsonl"
+SAVE_PATH = BASE_DIR.parent / "tokenizer" / "bpe_hugging_face_tokenizer.json"
 
 
 def train_bpe_tokenizer(texts: list[str], vocab_size: int) -> Tokenizer:
