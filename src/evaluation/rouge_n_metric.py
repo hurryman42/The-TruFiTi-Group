@@ -3,8 +3,9 @@ from src.evaluation.base_evaluation_metric import BaseEvaluationMetric, MetricRe
 
 class RougeNMetric(BaseEvaluationMetric):
     def __init__(self, type: str):
-        assert type in ["rouge1", "rouge2", "rougeL"]
+        if type not in ["rouge1", "rouge2", "rougeL"]: raise ValueError(f"Unsupported ROUGE type: {type}")
         self.type = type
+        self.scorer = rouge_scorer.RougeScorer([type], use_stemmer=True)
 
     @property
     def name(self) -> str:
@@ -16,24 +17,22 @@ class RougeNMetric(BaseEvaluationMetric):
         references: list[list[str]] | None = None,
     ) -> MetricResult:
 
-        assert references is not None, "references must be provided"
-
-        scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+        if references is None: raise ValueError("references must be provided")
 
         result_precision, result_recall, result_f1 = 0.0, 0.0, 0.0
 
-        for i in range(len(generated)):
+        for pred, refs in zip(generated, references):
             sum_precision, sum_recall, sum_f1 = 0.0, 0.0, 0.0
 
-            for j in range(len(references[i])):
-                scores = scorer.score(generated[i], references[i][j])
-                sum_precision += scores[self.type][0]
-                sum_recall += scores[self.type][1]
-                sum_f1 += scores[self.type][2]
+            for ref in refs:
+                scores = self.scorer.score(pred, ref)
+                sum_precision += scores[self.type].precision
+                sum_recall += scores[self.type].recall
+                sum_f1 += scores[self.type].fmeasure
 
-            result_precision += sum_precision / len(references[i])
-            result_recall += sum_recall / len(references[i])
-            result_f1 += sum_f1 / len(references[i])
+            result_precision += sum_precision / len(refs)
+            result_recall += sum_recall / len(refs)
+            result_f1 += sum_f1 / len(refs)
 
         result_precision = result_precision / len(references)
         result_recall = result_recall / len(references)
