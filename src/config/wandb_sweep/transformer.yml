@@ -14,20 +14,20 @@ parameters:
     max: 0.001
 
   training.batch_size:
-    values: [32, 64, 128]
+    values: [64, 128]
 
-  training.weight_decay:
-    distribution: log_uniform_values
-    min: 0.0001
-    max: 0.1
+  # training.weight_decay:
+  #   distribution: log_uniform_values
+  #   min: 0.0001
+  #   max: 0.1
 
-  training.warmup_iters:
-    values: [100, 300, 500]
+  # training.warmup_iters:
+  #   values: [100, 300, 500]
 
   model.dropout:
     distribution: uniform
     min: 0.05
-    max: 0.25
+    max: 0.20
 
   model.d_model:
     values: [128, 256]
@@ -36,7 +36,7 @@ parameters:
     values: [4, 6]
 
   model.num_heads:
-    values: [4, 8]
+    values: [4, 6]
 
 early_terminate:
   type: hyperband

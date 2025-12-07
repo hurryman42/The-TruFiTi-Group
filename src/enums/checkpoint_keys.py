@@ -15,3 +15,4 @@ class CheckpointEnum(StrEnum):
     DROPOUT = "dropout"
     TOKENIZER_TYPE = "tokenizer_type"
     DATA_SEED = "data_seed"
+    USE_ROPE = "use_rope"
