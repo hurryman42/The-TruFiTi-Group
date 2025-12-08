@@ -1,4 +1,4 @@
-from rouge_score import rouge_scorer
+from rouge_score import rouge_scorer  # type: ignore[import-untyped]
 
 from src.evaluation.base_evaluation_metric import BaseEvaluationMetric, MetricResult
 

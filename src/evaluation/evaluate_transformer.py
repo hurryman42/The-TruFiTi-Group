@@ -7,6 +7,7 @@ from src.enums import DataConfigEnum, SectionEnum
 from src.evaluation.bert_score import BERTScoreMetric
 from src.evaluation.distinct_n_metric import DistinctNMetric
 from src.evaluation.perplexity import PerplexityMetric
+from src.evaluation.rouge_n_metric import RougeNMetric
 from src.generation.generate_transformer import generate_batch, generate_completions_batch
 from src.utils import get_device, train_val_test_split
 from src.utils.data_loader import read_file_only_reviews
@@ -51,18 +52,30 @@ def evaluate(
             references.append(reference)
 
     completions = generate_completions_batch(model, tokenizer, device, prompts, gen_length)
-    bert_result = BERTScoreMetric().compute(completions, [[ref] for ref in references])
+    references_formatted = [[ref] for ref in references]
+
+    bert_result = BERTScoreMetric().compute(completions, references_formatted)
+
+    rouge1_metric = RougeNMetric(type="rouge1")
+    rouge1_result = rouge1_metric.compute(completions, references_formatted)
+
+    rouge2_metric = RougeNMetric(type="rouge2")
+    rouge2_result = rouge2_metric.compute(completions, references_formatted)
 
     print(f"Perplexity:  {ppl_result.score:.2f}")
     print(f"Distinct-1:  {d1_result.score:.4f}")
     print(f"Distinct-2:  {d2_result.score:.4f}")
     print(f"BERTScore:   {bert_result.score:.4f}")
+    print(f"ROUGE-1:     {rouge1_result.score:.4f}")  # NEU
+    print(f"ROUGE-2:     {rouge2_result.score:.4f}")  # NEU
 
     return {
         "perplexity": ppl_result.score,
         "distinct_1": d1_result.score,
         "distinct_2": d2_result.score,
         "bertscore_f1": bert_result.score,
+        "rouge1_f1": rouge1_result.score,  # NEU
+        "rouge2_f1": rouge2_result.score,  # NEU
     }
 
 
