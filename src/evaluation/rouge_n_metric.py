@@ -22,17 +22,17 @@ class RougeNMetric(BaseEvaluationMetric):
         result_precision, result_recall, result_f1 = 0.0, 0.0, 0.0
 
         for pred, refs in zip(generated, references):
-            sum_precision, sum_recall, sum_f1 = 0.0, 0.0, 0.0
+            current_precision, current_recall, current_f1 = 0.0, 0.0, 0.0
 
             for ref in refs:
-                scores = self.scorer.score(pred, ref)
-                sum_precision += scores[self.type].precision
-                sum_recall += scores[self.type].recall
-                sum_f1 += scores[self.type].fmeasure
+                scores = self.scorer.score(ref, pred)
+                current_precision = max(current_precision, scores[self.type].precision)
+                current_recall = max(current_recall, scores[self.type].recall)
+                current_f1 = max(current_f1, scores[self.type].fmeasure)
 
-            result_precision += sum_precision / len(refs)
-            result_recall += sum_recall / len(refs)
-            result_f1 += sum_f1 / len(refs)
+            result_precision += current_precision
+            result_recall += current_recall
+            result_f1 += current_f1
 
         result_precision = result_precision / len(references)
         result_recall = result_recall / len(references)
