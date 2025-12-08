@@ -53,7 +53,7 @@ class BPETokenizer(BaseTokenizer):
         """
         Encodes a string into a list of integers.
         """
-        result = text.encode("utf-8")
+        result = list(text.encode("utf-8"))
 
         for rule in self._merge_rules:
             result = self._apply_merge_rule(result, rule)
@@ -81,24 +81,23 @@ class BPETokenizer(BaseTokenizer):
 
         tokenizer = cls()
 
-        all_text = ""
+        all_tokens = list()
         for text in texts:
-            for i in range(len(text)):
-                all_text += text[i]
-
-        all_text = tokenizer.encode(all_text)
+            all_tokens.append(tokenizer.encode(text))
 
         for _ in range(len(tokenizer._vocabulary), target_size):
-            counter = {}
+            print("Progress:", _)
+            counter : dict[str, int] = dict()
 
-            for j in range(len(all_text) - 1):
-                pair = (
-                    str(all_text[j]) + "-" + str(all_text[j + 1])
-                )  # necessary because lists are not hashable in Python
-                if pair in counter:
-                    counter[pair] += 1
-                else:
-                    counter[pair] = 1
+            for tokens in all_tokens:
+                for j in range(len(tokens) - 1):
+                    pair = (
+                        str(tokens[j]) + "-" + str(tokens[j + 1])
+                    )  # necessary because lists are not hashable in Python
+                    if pair in counter:
+                        counter[pair] += 1
+                    else:
+                        counter[pair] = 1
 
             dominant = max(counter, key=counter.get)
             dominant_pair = dominant.split("-")
@@ -111,7 +110,11 @@ class BPETokenizer(BaseTokenizer):
             new_rule = [int(dominant_pair[0]), int(dominant_pair[1]), last_index]
             tokenizer._merge_rules.append(new_rule)
 
-            all_text = tokenizer._apply_merge_rule(all_text, new_rule)
+            m = 1
+            for tokens in all_tokens:
+                print("Subprogress:",m)
+                m += 1
+                tokens = tokenizer._apply_merge_rule(tokens, new_rule)
 
         print("Vocabulary:", tokenizer._vocabulary)
         print("Merge Rules:", tokenizer._merge_rules)
