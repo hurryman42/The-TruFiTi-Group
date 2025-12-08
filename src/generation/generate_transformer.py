@@ -98,6 +98,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, required=True, help="Model filename")
     parser.add_argument("--prompt", type=str, default="", help="Prompt for generation")
     parser.add_argument("--length", type=int, default=100, help="Number of tokens to generate")
+    parser.add_argument("--num", "-n", type=int, default=1, help="Number of generations")
 
     args = parser.parse_args()
 
@@ -115,4 +116,12 @@ if __name__ == "__main__":
     else:
         print(f"Unconditional generation (starting with {SpecialTokensEnum.BOS}):")
     print("=" * 80)
-    print(generate_single(model, tokenizer, device, args.prompt, args.length))
+
+    if args.num == 1:
+        print(generate_single(model, tokenizer, device, args.prompt, args.length))
+    else:
+        prompts = [args.prompt] * args.num
+        results = generate_batch(model, tokenizer, device, prompts, args.length)
+        for i, text in enumerate(results, 1):
+            print(f"\n--- Generation {i} ---")
+            print(text)
