@@ -2,20 +2,29 @@ from pathlib import Path
 
 import gradio as gr
 
-from src.generation.generate_transformer import generate, load_model
+from src.generation.generate_transformer import (
+    generate_single,
+    load_checkpoint,
+    load_model_tokenizer_from_transformer_checkpoint,
+)
+from src.utils.device import get_device
 
 BASE_DIR = Path(__file__).parent.parent.parent
-MODEL_PATH = BASE_DIR / "models" / "transformer_6.8M.pt"
+MODEL_PATH = BASE_DIR / "models" / "transformer_sinusoidal_6.8M.pt"
 
 
 def review_from_synopsis(synopsis):
-    prompt = f"Synopsis: {synopsis}\nReview:"
-    review = generate(model, tokenizer, tokenizer_type, device, prompt=prompt, length=200)
+    prompt = f"{synopsis} "
+    review = generate_single(model, tokenizer, device, prompt=prompt, length=200)
     return review
 
 
 if __name__ == "__main__":
-    model, tokenizer, tokenizer_type, device = load_model(MODEL_PATH)
+    device = get_device()
+    print(f"Using device: {device}")
+
+    checkpoint = load_checkpoint(MODEL_PATH, device)
+    model, tokenizer = load_model_tokenizer_from_transformer_checkpoint(checkpoint, device)
 
     custom_css = """
     body, .gradio-container {
@@ -58,11 +67,13 @@ if __name__ == "__main__":
     }
     """
 
-    with gr.Blocks(css=custom_css) as demo:
+    with gr.Blocks() as demo:
+        gr.HTML(f"<style>{custom_css}</style>")
         gr.Markdown("# <span style='color:#00C030;'>★</span> Letterboxd-style Film Log Demo", elem_id="main-card")
 
         with gr.Row():
-            synopsis_input = gr.Textbox(label="Paste the film's synopsis", lines=5, interactive=True)
+            # synopsis_input = gr.Textbox(label="Paste the film's synopsis", lines=5, interactive=True)
+            synopsis_input = gr.Textbox(label="Start your review here:", lines=5, interactive=True)
 
         gr.Markdown("Rate it:")
         # Stars UI + hidden input for current rating
