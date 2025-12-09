@@ -3,20 +3,20 @@ import hashlib
 import json
 import os
 import re
+import unicodedata
 
 from lingua import Language, LanguageDetectorBuilder
 
 DEFAULT_MIN_REVIEW_WORDS = 15
-DEFAULT_MIN_SYNOPSIS_WORDS = 0
 DEFAULT_MAX_EMOJIS = 5
-DEFAULT_MAX_NON_LATIN_CHARS = 20
+DEFAULT_MAX_WEIRD_CHARS = 10
+DEFAULT_MAX_REPETITION = 15
 
 BAD_PATTERNS = re.compile(
     r"(this review may contain spoilers"  # "This review may contain spoilers. I can handle the truth."
     r"|english version below"  # "Deutsche Kritik oben. English Version below ..."
     r"|^starring:"  # "Starring: Jackie Chan, Chris Tucker, Tom Wilkinson"
     r"|^seen (?:at|via|on)"  # "Seen via Panic Fest 2023" or "Seen at the cinema"
-    r"|^watched (?:at|via|with|on)"  # "Watched with the Golden Reel Gin Joint"
     r"|^part of (?:my|the)"  # "Part of my Japanese New Wave Top 200"
     r"|challenge$"  # "All Disney Features and Shorts Challenge"
     r"|^review from"  # "Review from my VOD column 'This Week on Demand'"
@@ -25,9 +25,17 @@ BAD_PATTERNS = re.compile(
 )
 
 
-def count_non_latin_chars(text):
-    allowed = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,!?;:'\"()-\n")
-    return sum(c not in allowed for c in text)
+def count_non_latin_script_chars(text):
+    count = 0
+    for c in text:
+        if c.isalpha():
+            try:
+                name = unicodedata.name(c, "")
+                if "LATIN" not in name:
+                    count += 1
+            except Exception:
+                count += 1
+    return count
 
 
 def count_emojis(text):
@@ -63,6 +71,24 @@ def is_english(text: str, detector) -> bool:
         return False
 
 
+def count_weird_chars(text):
+    weird = 0
+    for c in text:
+        cat = unicodedata.category(c)
+        # So = Symbol other (Braille)
+        # Mn = Mark nonspacing (Zalgo combining chars)
+        # Cf = Format
+        # Co = Private use
+        if cat in ("So", "Mn", "Cf", "Co"):
+            weird += 1
+    return weird
+
+
+def has_excessive_repetition(text, max_repeat):
+    pattern = rf"(.)\1{{{max_repeat},}}"
+    return bool(re.search(pattern, text))
+
+
 def is_valid_review(
     text,
     max_non_latin_chars,
@@ -82,7 +108,13 @@ def is_valid_review(
     if count_emojis(text) > DEFAULT_MAX_EMOJIS:
         return False
 
-    if count_non_latin_chars(text) > max_non_latin_chars:
+    if count_non_latin_script_chars(text) > max_non_latin_chars:
+        return False
+
+    if count_weird_chars(text) > DEFAULT_MAX_WEIRD_CHARS:
+        return False
+
+    if has_excessive_repetition(text, DEFAULT_MAX_REPETITION):
         return False
 
     if not is_english(text, detector):
@@ -135,18 +167,37 @@ def main():
     parser.add_argument(
         "--min-synopsis-words",
         type=int,
-        default=DEFAULT_MIN_SYNOPSIS_WORDS,
-        help=f"Minimum number of words required in synopsis (default: {DEFAULT_MIN_SYNOPSIS_WORDS}, no filtering)",
+        required=True,
+        help="Minimum number of words required in synopsis",
     )
+
     parser.add_argument(
         "--max-non-latin-chars",
         type=int,
-        default=DEFAULT_MAX_NON_LATIN_CHARS,
-        help=f"Maximum number of non-Latin characters allowed per review (default: {DEFAULT_MAX_NON_LATIN_CHARS})",
+        required=True,
+        help="Maximum number of non-Latin characters allowed per review",
     )
     args = parser.parse_args()
 
-    detector = LanguageDetectorBuilder.from_languages(Language.ENGLISH).with_preloaded_language_models().build()
+    detector = (
+        LanguageDetectorBuilder.from_languages(
+            Language.ENGLISH,
+            Language.SPANISH,
+            Language.FRENCH,
+            Language.GERMAN,
+            Language.PORTUGUESE,
+            Language.ITALIAN,
+            Language.DUTCH,
+            Language.SWEDISH,
+            Language.POLISH,
+            Language.RUSSIAN,
+            Language.JAPANESE,
+            Language.KOREAN,
+            Language.CHINESE,
+        )
+        .with_preloaded_language_models()
+        .build()
+    )
 
     output_filename = "letterboxd_filtered.jsonl"
     if args.min_synopsis_words > 0:

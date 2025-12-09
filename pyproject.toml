@@ -26,6 +26,9 @@ dependencies = [
     "lingua-language-detector>=2.1.1",
     "torchtune>=0.6.1",
     "torchao>=0.14.1",
+    "matplotlib>=3.10.7",
+    "evaluate>=0.4.6",
+    "bert-score>=0.3.13",
     "rouge-score>=0.1.2",
 ]
 

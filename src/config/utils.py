@@ -1,5 +1,7 @@
 from pathlib import Path
 from typing import Any
+from datetime import datetime
+
 
 import yaml
 
@@ -77,4 +79,4 @@ def get_model_save_path(config: dict[str, Any], num_params: int) -> Path:
             return MODEL_DIR / "bigram_model_bpe_hugging_face.pt"
         return MODEL_DIR / "bigram_model.pt"
 
-    return MODEL_DIR / f"transformer_{params_millions:.1f}M.pt"
+    return MODEL_DIR / f"transformer_{datetime.now()}_{params_millions:.1f}M.pt"

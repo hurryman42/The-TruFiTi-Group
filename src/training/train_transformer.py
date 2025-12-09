@@ -1,6 +1,7 @@
 import argparse
 import json
 import random
+from datetime import datetime
 
 import torch
 
@@ -63,6 +64,8 @@ def save_model(model, vocab_size: int, num_params: int, config: dict):
         CheckpointEnum.DROPOUT: model_cfg[TransformerModelEnum.DROPOUT],
         CheckpointEnum.TOKENIZER_TYPE: str(tokenizer_type),
         CheckpointEnum.DATA_SEED: config[SectionEnum.DATA][DataConfigEnum.SEED],
+        CheckpointEnum.USE_ROPE: model_cfg[TransformerModelEnum.USE_ROPE],
+        CheckpointEnum.DATA_FILE: config[SectionEnum.DATA][DataConfigEnum.FILE],
     }
 
     torch.save({str(k): v for k, v in checkpoint.items()}, save_path)
@@ -73,7 +76,7 @@ def save_model(model, vocab_size: int, num_params: int, config: dict):
 
 def save_metrics(metrics: TrainingMetrics, num_params: int):
     params_millions = num_params / 1_000_000
-    metrics_path = MODEL_DIR / f"transformer_{params_millions:.1f}M_metrics.json"
+    metrics_path = MODEL_DIR / f"transformer_{datetime.now()}_{params_millions:.1f}M_metrics.json"
 
     with open(metrics_path, "w") as f:
         json.dump(
@@ -140,15 +143,18 @@ def main(config: dict):
     texts = read_file_only_reviews(data_path)
     random.seed(data_cfg[DataConfigEnum.SEED])
     random.shuffle(texts)
-    encoded = encode_texts(texts, tokenizer, tokenizer_type)
-    print(f"Total tokens: {len(encoded):,}".replace(",", "."))
 
-    train_data, val_data, _ = train_val_test_split(
-        encoded,
+    train_texts, val_texts, _ = train_val_test_split(
+        texts,
         data_cfg[DataConfigEnum.TRAIN_SIZE],
         data_cfg[DataConfigEnum.VAL_SIZE],
         data_cfg[DataConfigEnum.TEST_SIZE],
     )
+
+    train_data = torch.tensor(encode_texts(train_texts, tokenizer, tokenizer_type), dtype=torch.long)
+    val_data = torch.tensor(encode_texts(val_texts, tokenizer, tokenizer_type), dtype=torch.long)
+
+    print(f"Total tokens: {len(train_data) + len(val_data):,}".replace(",", "."))
 
     print_training_statistics(config, len(train_data))
 

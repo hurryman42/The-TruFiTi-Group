@@ -106,11 +106,15 @@ def main(config: dict):
     print(f"Total tokens: {len(encoded):,}".replace(",", "."))
 
     data_cfg = config[SectionEnum.DATA]
-    train_data, val_data, _ = train_val_test_split(
-        encoded,
+    train_texts, val_texts, _ = train_val_test_split(
+        texts,
         data_cfg[DataConfigEnum.TRAIN_SIZE],
         data_cfg[DataConfigEnum.VAL_SIZE],
+        data_cfg[DataConfigEnum.TEST_SIZE],
     )
+
+    train_data = torch.tensor(encode_texts(train_texts, tokenizer, tokenizer_type), dtype=torch.long)
+    val_data = torch.tensor(encode_texts(val_texts, tokenizer, tokenizer_type), dtype=torch.long)
 
     model_cfg = config[SectionEnum.MODEL]
     d_model = model_cfg[BigramModelEnum.D_MODEL]

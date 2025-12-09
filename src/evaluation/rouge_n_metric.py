@@ -1,9 +1,12 @@
-from rouge_score import rouge_scorer
+from rouge_score import rouge_scorer  # type: ignore[import-untyped]
+
 from src.evaluation.base_evaluation_metric import BaseEvaluationMetric, MetricResult
+
 
 class RougeNMetric(BaseEvaluationMetric):
     def __init__(self, type: str):
-        if type not in ["rouge1", "rouge2", "rougeL"]: raise ValueError(f"Unsupported ROUGE type: {type}")
+        if type not in ["rouge1", "rouge2", "rougeL"]:
+            raise ValueError(f"Unsupported ROUGE type: {type}")
         self.type = type
         self.scorer = rouge_scorer.RougeScorer([type], use_stemmer=True)
 
@@ -16,12 +19,12 @@ class RougeNMetric(BaseEvaluationMetric):
         generated: list[str],
         references: list[list[str]] | None = None,
     ) -> MetricResult:
-
-        if references is None: raise ValueError("references must be provided")
+        if references is None:
+            raise ValueError("references must be provided")
 
         result_precision, result_recall, result_f1 = 0.0, 0.0, 0.0
 
-        for pred, refs in zip(generated, references):
+        for pred, refs in zip(generated, references, strict=False):
             current_precision, current_recall, current_f1 = 0.0, 0.0, 0.0
 
             for ref in refs:
@@ -46,5 +49,5 @@ class RougeNMetric(BaseEvaluationMetric):
                 "recall": result_recall,
                 "f1": result_f1,
                 "type": self.type,
-            }
+            },
         )

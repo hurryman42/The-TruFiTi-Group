@@ -1,5 +1,6 @@
 from src.evaluation.rouge_n_metric import RougeNMetric
 
+
 def test_rouge_n_metric():
     examples = ["The cat sat on the mat.", "the cat and the dog around the hat"]
     references = [["The cat is on the mat."], ["cat and the dog around the hat"]]
