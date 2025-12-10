@@ -58,4 +58,4 @@ clean:
 .PHONY: all check-deps run-filter clean
 
 test:
-	uv run -m pytest
+	uv run pytest
