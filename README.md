@@ -38,6 +38,7 @@ This project uses a `Makefile` to automate downloading the Letterboxd full dump 
 - needs uv installed (https://docs.astral.sh/uv/#installation), then:
   - `uv sync`
 - for developers:
+  - install pre-commit (e.g., `sudo apt install pre-commit`)
   - `pre-commit install`
   - `pre-commit install --hook-type pre-push`
 - Linux or macOS:
