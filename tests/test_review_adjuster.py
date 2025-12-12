@@ -8,5 +8,5 @@ def test_review_adjuster():
     for review_text in review_texts:
         result.append(review_adjuster.adjust_review(review_text))
 
-    assert result[0] == "this is a correct sentence"
-    assert result[1] == "this is not a correct sentence"
+    assert result[0][2] == "this is a correct sentence"
+    assert result[1][2] == "this is not a correct sentence"

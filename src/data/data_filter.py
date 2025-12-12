@@ -134,7 +134,8 @@ def filter_per_film(
 ):
     reviews = data.get("reviews", [])
     filtered_reviews = []
-    num_spelling_errors = 0
+    sum_spelling_errors = 0
+    sum_fixed_errors = 0
 
     for r in reviews:
         review_text = r.get("review_text", "")
@@ -147,23 +148,24 @@ def filter_per_film(
         seen_hashes.add(text_hash)
 
         # SPELL CHECK AND ADJUSTMENT
-        num_spelling_errors += review_adjuster.count_spelling_errors(review_text)
-        review_text = review_adjuster.adjust_review(review_text)
+        num_spelling_errors, num_fixed_errors, review_text = review_adjuster.adjust_review(review_text)
+        sum_spelling_errors += num_spelling_errors
+        sum_fixed_errors += num_fixed_errors
 
         filtered_reviews.append(review_text)
 
     if not filtered_reviews:
-        return None, 0
+        return None, 0, 0
 
     if min_synopsis_words > 0 and not has_sufficient_synopsis(data.get("synopsis"), min_synopsis_words):
-        return None, 0
+        return None, 0, 0
 
     return {
         "title": data.get("title"),
         "year": data.get("year"),
         "synopsis": data.get("synopsis"),
         "review_texts": filtered_reviews,
-    }, num_spelling_errors
+    }, sum_spelling_errors, sum_fixed_errors
 
 
 def main():
@@ -218,6 +220,7 @@ def main():
     filtered_films = 0
     filtered_reviews = 0
     total_spelling_errors = 0
+    total_fixes = 0
 
     with open(args.input_file, encoding="utf-8") as infile, open(output_file, "w", encoding="utf-8") as outfile:
         seen_hashes = set()
@@ -226,7 +229,7 @@ def main():
                 data = json.loads(line)
                 total_films += 1
                 total_reviews += len(data.get("reviews", []))
-                filtered, num_spelling_errors_per_film = filter_per_film(
+                filtered, num_spelling_errors_per_film, num_fixed_errors_per_film = filter_per_film(
                     data, args.min_synopsis_words, args.max_non_latin_chars, seen_hashes, detector
                 )
                 if filtered:
@@ -235,6 +238,8 @@ def main():
                     filtered_films += 1
                     filtered_reviews += len(filtered["review_texts"])
                     total_spelling_errors += num_spelling_errors_per_film
+                    total_fixes += num_fixed_errors_per_film
+
                     print("Processed films:", filtered_films) #debug
                     print("Processed spelling errors:", total_spelling_errors) #debug
                 else:
@@ -250,7 +255,8 @@ def main():
     print(f"Reviews before filtering: {total_reviews}")
     print(f"Films after filtering: {filtered_films}")
     print(f"Reviews after filtering: {filtered_reviews}")
-    print(f"Fixed spelling errors: {total_spelling_errors}")
+    print(f"Number of spelling errors: {total_spelling_errors}")
+    print(f"Number of spelling fixes: {total_fixes}")
     print(f"Saved to {output_file}")
 
 
