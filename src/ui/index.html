@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FilmCriticLM — Letterboxd Styled Demo</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<div class="lb-card">
+
+    <div class="lb-header">
+        <div class="left">✕</div>
+        <div class="center">I Watched</div>
+        <div class="right">✓</div>
+    </div>
+
+    <label class="lb-label">Start your review:</label>
+    <textarea id="synopsis-input" class="lb-textbox" placeholder="Write your thoughts or paste a synopsis…"></textarea>
+
+    <label class="lb-label">Rate it:</label>
+
+    <div id="rating-widget">
+        <div class="stars">
+            <!-- star #1 -->
+            <div class="star">
+                <span class="half left"  data-value="0.5"></span>
+                <span class="half right" data-value="1"></span>
+            </div>
+
+            <!-- star #2 -->
+            <div class="star">
+                <span class="half left"  data-value="1.5"></span>
+                <span class="half right" data-value="2"></span>
+            </div>
+
+            <!-- star #3 -->
+            <div class="star">
+                <span class="half left"  data-value="2.5"></span>
+                <span class="half right" data-value="3"></span>
+            </div>
+
+            <!-- star #4 -->
+            <div class="star">
+                <span class="half left"  data-value="3.5"></span>
+                <span class="half right" data-value="4"></span>
+            </div>
+
+            <!-- star #5 -->
+            <div class="star">
+                <span class="half left"  data-value="4.5"></span>
+                <span class="half right" data-value="5"></span>
+            </div>
+        </div>
+
+        <span id="heart" class="heart">♡</span>
+    </div>
+
+    <button id="generate-btn" class="lb-generate-btn">
+        Generate with FilmCriticLM
+    </button>
+
+</div>
+
+
+<div class="lb-card">
+    <label class="lb-label">Generated Review</label>
+    <textarea id="output" class="lb-output" readonly></textarea>
+</div>
+
+<script src="/static/main.js"></script>
+</body>
+</html>

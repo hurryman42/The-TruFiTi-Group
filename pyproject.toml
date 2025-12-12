@@ -19,7 +19,6 @@ dependencies = [
     "notebook (>=7.4.7,<8.0.0)",
     "tokenizers (>=0.22.1,<0.23.0)",
     "pyyaml>=6.0.0,<7.0.0",
-    "gradio>=6.0.1",
     "tqdm>=4.67.1",
     "wandb>=0.23.0",
     "numpy>=1.26.4",
@@ -30,6 +29,8 @@ dependencies = [
     "evaluate>=0.4.6",
     "bert-score>=0.3.13",
     "rouge-score>=0.1.2",
+    "fastapi>=0.124.4",
+    "uvicorn>=0.38.0",
 ]
 
 [dependency-groups]

@@ -71,7 +71,7 @@ where `[CONFIG]` could be `transformer_default`
 `uv run -m src.generation.generate_transformer --model transformer_rope_6.8M.pt --prompt "good movie because"`
 
 ### Demo
-`uv run -m src.ui.demo`
+`uv run -m src.ui.server`
 
 ---
 
