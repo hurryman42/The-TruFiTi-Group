@@ -30,6 +30,7 @@ dependencies = [
     "evaluate>=0.4.6",
     "bert-score>=0.3.13",
     "rouge-score>=0.1.2",
+    "pyspellchecker>=0.8.4",
 ]
 
 [dependency-groups]
