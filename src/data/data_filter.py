@@ -6,6 +6,7 @@ import re
 import unicodedata
 
 from lingua import Language, LanguageDetectorBuilder
+from src.data.data_adjustment import ReviewAdjuster
 
 DEFAULT_MIN_REVIEW_WORDS = 15
 DEFAULT_MAX_EMOJIS = 5
@@ -24,6 +25,7 @@ BAD_PATTERNS = re.compile(
     r"|^action! -)"  # "ACTION! - KILLER MIKE"
 )
 
+review_adjuster = ReviewAdjuster()
 
 def count_non_latin_script_chars(text):
     count = 0
@@ -132,6 +134,7 @@ def filter_per_film(
 ):
     reviews = data.get("reviews", [])
     filtered_reviews = []
+    num_spelling_errors = 0
 
     for r in reviews:
         review_text = r.get("review_text", "")
@@ -143,20 +146,24 @@ def filter_per_film(
             continue
         seen_hashes.add(text_hash)
 
+        # SPELL CHECK AND ADJUSTMENT
+        num_spelling_errors += review_adjuster.count_spelling_errors(review_text)
+        review_text = review_adjuster.adjust_review(review_text)
+
         filtered_reviews.append(review_text)
 
     if not filtered_reviews:
-        return None
+        return None, 0
 
     if min_synopsis_words > 0 and not has_sufficient_synopsis(data.get("synopsis"), min_synopsis_words):
-        return None
+        return None, 0
 
     return {
         "title": data.get("title"),
         "year": data.get("year"),
         "synopsis": data.get("synopsis"),
         "review_texts": filtered_reviews,
-    }
+    }, num_spelling_errors
 
 
 def main():
@@ -210,6 +217,7 @@ def main():
     total_reviews = 0
     filtered_films = 0
     filtered_reviews = 0
+    total_spelling_errors = 0
 
     with open(args.input_file, encoding="utf-8") as infile, open(output_file, "w", encoding="utf-8") as outfile:
         seen_hashes = set()
@@ -218,7 +226,7 @@ def main():
                 data = json.loads(line)
                 total_films += 1
                 total_reviews += len(data.get("reviews", []))
-                filtered = filter_per_film(
+                filtered, num_spelling_errors_per_film = filter_per_film(
                     data, args.min_synopsis_words, args.max_non_latin_chars, seen_hashes, detector
                 )
                 if filtered:
@@ -226,6 +234,9 @@ def main():
                     processed_count += 1
                     filtered_films += 1
                     filtered_reviews += len(filtered["review_texts"])
+                    total_spelling_errors += num_spelling_errors_per_film
+                    print("Processed films:", filtered_films) #debug
+                    print("Processed spelling errors:", total_spelling_errors) #debug
                 else:
                     skipped_count += 1
             except json.JSONDecodeError as e:
@@ -239,6 +250,7 @@ def main():
     print(f"Reviews before filtering: {total_reviews}")
     print(f"Films after filtering: {filtered_films}")
     print(f"Reviews after filtering: {filtered_reviews}")
+    print(f"Fixed spelling errors: {total_spelling_errors}")
     print(f"Saved to {output_file}")
 
 
