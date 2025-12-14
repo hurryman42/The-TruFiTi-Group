@@ -109,7 +109,7 @@ body {
     pointer-events: none;
 }
 
-/* Filled star (foreground) */
+/* filled star (foreground) */
 .star::after {
     content: "★";
     font-size: 3.0rem;

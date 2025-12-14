@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -12,7 +13,6 @@ from src.generation.generate_transformer import (
 )
 from src.utils.device import get_device
 
-# ---- Load model ----
 BASE_DIR = Path(__file__).parent.parent.parent
 MODEL_PATH = BASE_DIR / "models" / "transformer_sinusoidal_6.8M.pt"
 
@@ -21,30 +21,29 @@ checkpoint = load_checkpoint(MODEL_PATH, device)
 model, tokenizer = load_model_tokenizer_from_transformer_checkpoint(checkpoint, device)
 
 
-# ---- FastAPI ----
 app = FastAPI()
 
 UI_DIR = Path(__file__).parent  # <-- src/ui/
 
 
-# Serve static files (CSS, JS, images, etc.)
+# serve static files (CSS, JS, images, etc.)
 app.mount("/static", StaticFiles(directory=UI_DIR), name="static")
 
 
-# Serve index.html at "/"
+# serve index.html at "/"
 @app.get("/")
 def serve_ui():
     return FileResponse(UI_DIR / "index.html")
 
 
-# Request body schema
+# request body schema
 class GenerateRequest(BaseModel):
     synopsis: str
     rating: float
     liked: bool
 
 
-# Generation endpoint
+# generation endpoint
 @app.post("/generate")
 def generate(req: GenerateRequest):
     prompt = req.synopsis
@@ -53,8 +52,5 @@ def generate(req: GenerateRequest):
     return {"review": review}
 
 
-# Run with uv
 if __name__ == "__main__":
-    import uvicorn
-
     uvicorn.run("src.ui.server:app", host="0.0.0.0", port=8000, reload=True)

@@ -6,7 +6,7 @@ const heart = document.getElementById("heart");
 let currentRating = 0;
 let liked = false;
 
-// --- Draw selected stars (0, 0.5, 1.0, ... 5.0) ---
+// --- draw selected stars (0, 0.5, 1.0, ... 5.0) ---
 function render(rating) {
     stars.forEach((star, idx) => {
         const full = idx + 1;       // 1, 2, 3, 4, 5
@@ -22,7 +22,7 @@ function render(rating) {
     });
 }
 
-// --- Hover preview (only when not yet rated) ---
+// --- hover preview (only when not yet rated) ---
 halves.forEach(h => {
     h.addEventListener("mouseenter", () => {
         if (currentRating !== 0) return;
