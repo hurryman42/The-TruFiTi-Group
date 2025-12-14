@@ -1,0 +1,195 @@
+body {
+    background: #14181C;
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+    color: white;
+    margin: 0;
+    padding: 30px 0;
+}
+
+
+
+/* CARD */
+.lb-card {
+    background: #1E2429;
+    padding: 24px 28px;
+    border-radius: 16px;
+    margin: 24px auto;
+    max-width: 650px;
+    box-shadow: 0 0 40px #0005;
+    padding-left: 28px;
+    padding-right: 28px;
+}
+
+
+
+/* HEADER BAR */
+.lb-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.6em;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #2B343A;
+}
+
+.lb-header .left { color: #7A858D; }
+.lb-header .center { font-weight: 600; }
+.lb-header .right { color: #7A858D; }
+
+
+
+/* LABELS */
+.lb-label {
+    color: #B5BEC7;
+    font-size: 1.05em;
+    margin: 6px 0;
+    display: block;
+}
+
+
+
+/* TEXTBOXES */
+.lb-textbox, .lb-output {
+    background: #2A333A;
+    border: none;
+    border-radius: 12px;
+    width: 100%;
+    padding: 12px;
+    color: white;
+    font-size: 1.05em;
+    resize: vertical;
+    min-height: 120px;
+    box-sizing: border-box;
+}
+
+.lb-output {
+    min-height: 140px;
+}
+
+
+#rating-widget {
+    display: flex;
+    align-items: center;
+    gap: 22px; /* space between all stars and the heart */
+}
+
+
+/* STARS */
+.stars {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+.star {
+    position: relative;
+    width: 3.0rem;
+    height: 3.0rem;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 0 0 auto;
+}
+
+.star::before {
+    content: "★";
+    font-size: 3.0rem;
+    color: #455159;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+}
+
+/* filled star (foreground) */
+.star::after {
+    content: "★";
+    font-size: 3.0rem;
+    color: #00C030;
+    text-shadow: 0 0 10px #00C030AA;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    clip-path: inset(0 100% 0 0); /* fully clipped (invisible) by default */
+    pointer-events: none;
+}
+
+/* half visible (left 50%) */
+.star.half-selected::after {
+    clip-path: inset(0 50% 0 0);
+}
+
+/* fully visible */
+.star.full-selected::after,
+.star.hovered::after {
+    clip-path: inset(0 0 0 0);
+}
+
+.half {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    height: 100%;
+    cursor: pointer;
+    display: block;
+}
+
+.half.left { left: 0; z-index: 1; }
+.half.right { right: 0; z-index: 2; }
+
+.half.hovered ~ .half::before { }
+
+.star.full-selected::before {
+    color: #00C030;
+    text-shadow: 0 0 10px #00C030AA;
+}
+
+
+
+/* HEART */
+.heart {
+    font-size: 3rem;
+    cursor: pointer;
+    color: #49545C;
+    transition: 0.2s ease;
+}
+
+.heart.liked {
+    color: #FF4F70;
+    text-shadow: 0 0 7px #FF4F7088;
+    transform: scale(1.2);
+}
+
+
+
+/* BUTTON */
+.lb-generate-btn {
+    background: #00C030;
+    color: black;
+    font-weight: 600;
+    border-radius: 14px;
+    padding: 14px;
+    font-size: 1.1em;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.lb-generate-btn:hover {
+    filter: brightness(1.1);
+}
