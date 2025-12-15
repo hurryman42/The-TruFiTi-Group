@@ -1,5 +1,6 @@
 from src.evaluation.distinct_n_metric import DistinctNMetric
 
+
 def test_distinct_n_metric():
     generated = ["<BOS> A B A B <EOS>", "<BOS> B A B A <EOS>"]
 
