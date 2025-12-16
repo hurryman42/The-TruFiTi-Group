@@ -147,12 +147,8 @@ def filter_per_film(
             continue
         seen_hashes.add(text_hash)
 
-        # SPELL CHECK AND ADJUSTMENT
-        num_spelling_errors, num_fixed_errors, review_text = review_adjuster.adjust_review(review_text)
-        sum_spelling_errors += num_spelling_errors
-        sum_fixed_errors += num_fixed_errors
-
-        filtered_reviews.append(review_text)
+        if review_adjuster.is_spelling_adequate(review_text):
+            filtered_reviews.append(review_text)
 
     if not filtered_reviews:
         return None, 0, 0
@@ -241,7 +237,7 @@ def main():
                     total_fixes += num_fixed_errors_per_film
 
                     print("Processed films:", filtered_films) #debug
-                    print("Processed spelling errors:", total_spelling_errors) #debug
+                    # print("Processed spelling errors:", total_spelling_errors) #debug
                 else:
                     skipped_count += 1
             except json.JSONDecodeError as e:
