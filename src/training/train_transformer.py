@@ -76,7 +76,9 @@ def save_model(model, vocab_size: int, num_params: int, config: dict):
 
 def save_metrics(metrics: TrainingMetrics, num_params: int):
     params_millions = num_params / 1_000_000
-    metrics_path = MODEL_DIR / f"transformer_{datetime.now()}_{params_millions:.1f}M_metrics.json"
+    metrics_path = (
+        MODEL_DIR / f"transformer_{datetime.now().strftime("%Y-%m-%d_%H:%M:%S")}_{params_millions:.1f}M_metrics.json"
+    )
 
     with open(metrics_path, "w") as f:
         json.dump(

@@ -64,14 +64,18 @@ If you see errors about `curl` or `python3` missing, please install them using y
 `make run-filter`
 
 ### Training
-`uv run -m src.training.train_transformer [CONFIG]`
-where `[CONFIG]` could be `transformer_default`
+- `uv run -m src.training.train_transformer [CONFIG]`
+  - for available `[CONFIG]` files, check out `/src/config/`, use file name without the `.yml`-ending
+    - e.g. `transformer_default`
 
 ### Generation using trained model
 `uv run -m src.generation.generate_transformer --model transformer_rope_6.8M.pt --prompt "good movie because"`
 
 ### Demo
 `uv run -m src.ui.server`
+
+### Evaluation
+`uv run -m src.evaluation.evaluate_transformer --model [MODEL] --config [CONFIG]`
 
 ---
 
