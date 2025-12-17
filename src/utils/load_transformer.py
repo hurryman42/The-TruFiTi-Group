@@ -20,7 +20,7 @@ def load_model_tokenizer_from_transformer_checkpoint(checkpoint: dict, device: s
     )
     print(f"Blocks: {checkpoint[CheckpointEnum.NUM_BLOCKS]}, Heads: {checkpoint[CheckpointEnum.NUM_HEADS]}\n")
 
-    tokenizer_path = BASE_DIR / "tokenizer" / "bpe_hugging_face_tokenizer.json"
+    tokenizer_path = BASE_DIR / "tokenizer" / "bpe_hf_letterboxd_filtered_0.95.json"
     tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
 
     model = TransformerDecoderOnly(

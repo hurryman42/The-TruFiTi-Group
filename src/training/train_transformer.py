@@ -11,11 +11,12 @@ from src.config import (
     get_data_path,
     get_model_save_path,
     get_model_type,
+    get_tokenizer_name,
     get_tokenizer_path,
     get_tokenizer_type,
     load_config,
+    recompute_computed_fields,
 )
-from src.config.utils import recompute_computed_fields
 from src.enums import (
     CheckpointEnum,
     DataConfigEnum,
@@ -127,10 +128,11 @@ def main(config: dict):
 
     device = get_device()
     tokenizer_type = get_tokenizer_type(config)
+    tokenizer_name = get_tokenizer_name(config)
     tokenizer_path = get_tokenizer_path(config)
 
     print(f"Using device: {device}")
-    print(f"Tokenizer: {tokenizer_type}\n")
+    print(f"Tokenizer: {tokenizer_name}\n")
 
     if tokenizer_type == TokenizerTypeEnum.CHAR:
         tokenizer = load_char_tokenizer(tokenizer_path)
