@@ -69,7 +69,7 @@ If you see errors about `curl` or `python3` missing, please install them using y
     - e.g. `transformer_default`
 
 ### Generation using trained model
-`uv run -m src.generation.generate_transformer --model transformer_rope_6.8M.pt --prompt "good movie because"`
+`uv run -m src.generation.generate_transformer --model [MODEL] --prompt "good movie because"`
 
 ### Demo
 `uv run -m src.ui.server --model [MODEL]`
