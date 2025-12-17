@@ -24,9 +24,6 @@ BAD_PATTERNS = re.compile(
     r"|^action! -)"  # "ACTION! - KILLER MIKE"
 )
 
-# TODO add progress bar for filtering
-# TODO put data_filter in utils?
-
 
 def count_non_latin_script_chars(text):
     count = 0
