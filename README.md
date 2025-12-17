@@ -72,7 +72,7 @@ If you see errors about `curl` or `python3` missing, please install them using y
 `uv run -m src.generation.generate_transformer --model transformer_rope_6.8M.pt --prompt "good movie because"`
 
 ### Demo
-`uv run -m src.ui.server`
+`uv run -m src.ui.server --model [MODEL]`
 
 ### Evaluation
 `uv run -m src.evaluation.evaluate_transformer --model [MODEL] --config [CONFIG]`
