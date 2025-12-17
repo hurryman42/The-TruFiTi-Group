@@ -2,7 +2,7 @@ from pathlib import Path
 
 import torch
 
-from src.enums import CheckpointEnum, TokenizerTypeEnum
+from src.enums import CheckpointEnum
 from src.models.transformer.transformer import TransformerDecoderOnly
 from src.utils import load_bpe_hugging_face_tokenizer
 
@@ -10,9 +10,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 def load_model_tokenizer_from_transformer_checkpoint(checkpoint: dict, device: str):
-    tokenizer_type = TokenizerTypeEnum(checkpoint[CheckpointEnum.TOKENIZER_TYPE])
+    tokenizer_name = checkpoint[CheckpointEnum.TOKENIZER_NAME]
 
-    print(f"Tokenizer: {tokenizer_type}")
+    print(f"Tokenizer: {tokenizer_name}")
     print(
         f"Vocab size: {checkpoint[CheckpointEnum.VOCAB_SIZE]}, "
         f"d_model: {checkpoint[CheckpointEnum.D_MODEL]}, "
@@ -20,7 +20,7 @@ def load_model_tokenizer_from_transformer_checkpoint(checkpoint: dict, device: s
     )
     print(f"Blocks: {checkpoint[CheckpointEnum.NUM_BLOCKS]}, Heads: {checkpoint[CheckpointEnum.NUM_HEADS]}\n")
 
-    tokenizer_path = BASE_DIR / "tokenizer" / "bpe_hf_letterboxd_filtered_0.95.json"
+    tokenizer_path = BASE_DIR / "tokenizer" / tokenizer_name
     tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
 
     model = TransformerDecoderOnly(

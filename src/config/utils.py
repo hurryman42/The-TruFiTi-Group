@@ -57,12 +57,13 @@ def get_tokenizer_type(config: dict[str, Any]) -> TokenizerTypeEnum:
 
 
 def get_tokenizer_name(config: dict[str, Any]) -> str:
-    return Path(config[SectionEnum.DATA][DataConfigEnum.FILE]).stem
+    data_file = get_data_name(config)
+    return f"bpe_hf_{data_file}.json"
 
 
 def get_tokenizer_path(config: dict[str, Any]) -> Path:
     tokenizer_type = get_tokenizer_type(config)
-    data_file = get_tokenizer_name(config)
+    data_file = get_data_name(config)
     if tokenizer_type == TokenizerTypeEnum.CHAR:
         return TOKENIZER_DIR / "char_tokenizer.json"
     return TOKENIZER_DIR / f"bpe_hf_{data_file}.json"
@@ -71,6 +72,10 @@ def get_tokenizer_path(config: dict[str, Any]) -> Path:
 def get_data_path(config: dict[str, Any]) -> Path:
     data_file = config[SectionEnum.DATA][DataConfigEnum.FILE]
     return DATA_DIR / data_file
+
+
+def get_data_name(config: dict[str, Any]) -> str:
+    return Path(config[SectionEnum.DATA][DataConfigEnum.FILE]).stem
 
 
 def get_model_save_path(config: dict[str, Any], num_params: int) -> Path:

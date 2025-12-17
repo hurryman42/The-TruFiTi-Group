@@ -52,6 +52,7 @@ def save_model(model, vocab_size: int, num_params: int, config: dict):
 
     model_cfg = config[SectionEnum.MODEL]
     tokenizer_type = get_tokenizer_type(config)
+    tokenizer_name = get_tokenizer_name(config)
 
     checkpoint = {
         CheckpointEnum.MODEL: model.state_dict(),
@@ -64,6 +65,7 @@ def save_model(model, vocab_size: int, num_params: int, config: dict):
         CheckpointEnum.FF_HIDDEN_DIM: model_cfg[TransformerModelEnum.FF_HIDDEN_DIM],
         CheckpointEnum.DROPOUT: model_cfg[TransformerModelEnum.DROPOUT],
         CheckpointEnum.TOKENIZER_TYPE: str(tokenizer_type),
+        CheckpointEnum.TOKENIZER_NAME: str(tokenizer_name),
         CheckpointEnum.DATA_SEED: config[SectionEnum.DATA][DataConfigEnum.SEED],
         CheckpointEnum.USE_ROPE: model_cfg[TransformerModelEnum.USE_ROPE],
         CheckpointEnum.DATA_FILE: config[SectionEnum.DATA][DataConfigEnum.FILE],
@@ -211,7 +213,7 @@ def main(config: dict):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train Transformer Language Model")
-    parser.add_argument("config", type=str, default="transformer_default", help="Config file path")
+    parser.add_argument("--config", type=str, default="transformer_default", help="Config name")
 
     args = parser.parse_args()
 
