@@ -10,10 +10,11 @@ from src.enums.types import SpecialTokensEnum
 from src.utils.data_loader import read_file_only_reviews
 
 # TODO choose tokenizer size in config file
+# TODO make model an argument parameter
 VOCAB_SIZE = 4000
 BASE_DIR = Path(__file__).resolve().parent.parent
 INPUT_FILE = BASE_DIR.parent / "data" / "letterboxd_filtered.jsonl"
-SAVE_PATH = BASE_DIR.parent / "tokenizer" / "bpe_hugging_face_tokenizer.json"
+SAVE_PATH = BASE_DIR.parent / "tokenizer" / "bpe_hf" "letterboxd_filtered" ".json"
 
 
 def train_bpe_tokenizer(texts: list[str], vocab_size: int) -> Tokenizer:
