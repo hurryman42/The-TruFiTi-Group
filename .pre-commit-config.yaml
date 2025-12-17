@@ -1,27 +1,23 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4
+    rev: v0.14.6
     hooks:
-      # linter
       - id: ruff
         args: [--fix]
-      # formatter
       - id: ruff-format
 
   - repo: local
     hooks:
-      - id: make-test
-        name: make test
+      - id: mypy
+        name: mypy
+        entry: uv run mypy .
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: test
+        name: tests
         entry: make test
         language: system
         pass_filenames: false
-        always_run: true
-        verbose: true
         stages: [pre-push]
-      - id: mypy-warning
-        name: mypy
-        entry: bash -c "uv run mypy . || true" # TODO remove "|| true" after bpe_tokenizer fix
-        language: system
-        pass_filenames: false
-        verbose: true
-        stages: [ pre-push ]
