@@ -9,12 +9,13 @@ class ModelTypeEnum(StrEnum):
 class TokenizerTypeEnum(StrEnum):
     CHAR = "char"
     BPE_HUGGING_FACE = "bpe_hugging_face"
+    BPE = "bpe"
 
 
 class SpecialTokensEnum(StrEnum):
     PAD = "<PAD>"
-    EOS = "<EOS>"
     BOS = "<BOS>"
+    EOS = "<EOS>"
 
 
 class DataEnum(StrEnum):
