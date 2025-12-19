@@ -1,5 +1,7 @@
 import json
 
+from src.enums.types import DataEnum
+
 
 def read_file_only_reviews(file_path) -> list[str]:
     reviews = []
@@ -11,8 +13,8 @@ def read_file_only_reviews(file_path) -> list[str]:
                 print(f"Invalid JSON in line {i}: {e}")
                 continue
 
-            if data.get("review_texts"):
-                reviews.extend(data["review_texts"])
+            if data.get(DataEnum.REVIEW_TEXT):
+                reviews.extend(data[DataEnum.REVIEW_TEXT])
 
     print(f"Number of reviews: {len(reviews):,}".replace(",", "."))
 
@@ -29,11 +31,11 @@ def read_file_synopsis_review_pairs(file_path) -> list[str]:
                 print(f"Invalid JSON in line {i}: {e}")
                 continue
 
-            synopsis = data.get("synopsis")
-            if not synopsis or not data.get("review_texts"):
+            synopsis = data.get(DataEnum.SYNOPSIS)
+            if not synopsis or not data.get(DataEnum.REVIEW_TEXT):
                 continue
 
-            for review in data["review_texts"]:
+            for review in data[DataEnum.REVIEW_TEXT]:
                 pairs.append(f"{synopsis} {review}")
 
     print(f"Number of synopsis-review-pairs: {len(pairs):,}".replace(",", "."))

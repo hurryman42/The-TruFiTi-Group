@@ -11,11 +11,12 @@ from src.config import (
     get_data_path,
     get_model_save_path,
     get_model_type,
+    get_tokenizer_name,
     get_tokenizer_path,
     get_tokenizer_type,
     load_config,
+    recompute_computed_fields,
 )
-from src.config.utils import recompute_computed_fields
 from src.enums import (
     CheckpointEnum,
     DataConfigEnum,
@@ -51,6 +52,7 @@ def save_model(model, vocab_size: int, num_params: int, config: dict):
 
     model_cfg = config[SectionEnum.MODEL]
     tokenizer_type = get_tokenizer_type(config)
+    tokenizer_name = get_tokenizer_name(config)
 
     checkpoint = {
         CheckpointEnum.MODEL: model.state_dict(),
@@ -63,6 +65,7 @@ def save_model(model, vocab_size: int, num_params: int, config: dict):
         CheckpointEnum.FF_HIDDEN_DIM: model_cfg[TransformerModelEnum.FF_HIDDEN_DIM],
         CheckpointEnum.DROPOUT: model_cfg[TransformerModelEnum.DROPOUT],
         CheckpointEnum.TOKENIZER_TYPE: str(tokenizer_type),
+        CheckpointEnum.TOKENIZER_NAME: str(tokenizer_name),
         CheckpointEnum.DATA_SEED: config[SectionEnum.DATA][DataConfigEnum.SEED],
         CheckpointEnum.USE_ROPE: model_cfg[TransformerModelEnum.USE_ROPE],
         CheckpointEnum.DATA_FILE: config[SectionEnum.DATA][DataConfigEnum.FILE],
@@ -76,7 +79,9 @@ def save_model(model, vocab_size: int, num_params: int, config: dict):
 
 def save_metrics(metrics: TrainingMetrics, num_params: int):
     params_millions = num_params / 1_000_000
-    metrics_path = MODEL_DIR / f"transformer_{datetime.now()}_{params_millions:.1f}M_metrics.json"
+    metrics_path = (
+        MODEL_DIR / f"transformer_{datetime.now().strftime("%Y-%m-%d_%H:%M:%S")}_{params_millions:.1f}M_metrics.json"
+    )
 
     with open(metrics_path, "w") as f:
         json.dump(
@@ -125,10 +130,11 @@ def main(config: dict):
 
     device = get_device()
     tokenizer_type = get_tokenizer_type(config)
+    tokenizer_name = get_tokenizer_name(config)
     tokenizer_path = get_tokenizer_path(config)
 
     print(f"Using device: {device}")
-    print(f"Tokenizer: {tokenizer_type}\n")
+    print(f"Tokenizer: {tokenizer_name}\n")
 
     if tokenizer_type == TokenizerTypeEnum.CHAR:
         tokenizer = load_char_tokenizer(tokenizer_path)
@@ -207,7 +213,7 @@ def main(config: dict):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train Transformer Language Model")
-    parser.add_argument("config", type=str, default="transformer_default", help="Config file path")
+    parser.add_argument("--config", type=str, default="transformer_default", help="Config name")
 
     args = parser.parse_args()
 
