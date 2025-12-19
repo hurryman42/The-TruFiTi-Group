@@ -31,6 +31,8 @@ dependencies = [
     "rouge-score>=0.1.2",
     "fastapi>=0.124.4",
     "uvicorn>=0.38.0",
+    "pyspellchecker>=0.8.4",
+    "language-tool-python>=3.2.0",
 ]
 
 [dependency-groups]
