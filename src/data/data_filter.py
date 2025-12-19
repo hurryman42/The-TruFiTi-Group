@@ -6,6 +6,7 @@ import re
 import unicodedata
 
 from lingua import Language, LanguageDetectorBuilder
+from src.data.data_adjustment import ReviewAdjuster
 
 DEFAULT_MIN_REVIEW_WORDS = 15
 DEFAULT_MAX_EMOJIS = 5
@@ -23,6 +24,8 @@ BAD_PATTERNS = re.compile(
     r"|watchlist$"  # "French Film Noir Watchlist"
     r"|^action! -)"  # "ACTION! - KILLER MIKE"
 )
+
+review_adjuster = ReviewAdjuster()
 
 
 def count_non_latin_script_chars(text):
@@ -118,6 +121,9 @@ def is_valid_review(
         return False
 
     if not is_english(text, detector):
+        return False
+
+    if not review_adjuster.is_grammar_adequate(text):
         return False
 
     return True
@@ -226,6 +232,8 @@ def main():
                     processed_count += 1
                     filtered_films += 1
                     filtered_reviews += len(filtered["review_texts"])
+                    if processed_count % 100 == 0:
+                        print(f"Processed {processed_count} entries")
                 else:
                     skipped_count += 1
             except json.JSONDecodeError as e:
