@@ -48,9 +48,9 @@ class TransformerDecoderOnly(nn.Module):
 
     def forward(self, index):
         batch_size, seq_length = index.shape
-        assert (
-            seq_length <= self.block_size
-        ), f"Cannot forward sequence of length {seq_length}, block size is only {self.block_size}"
+        assert seq_length <= self.block_size, (
+            f"Cannot forward sequence of length {seq_length}, block size is only {self.block_size}"
+        )
 
         x = self.token_embedding(index)  # (batch_size, seq_length, embed_dim)
         if not self.use_rope:

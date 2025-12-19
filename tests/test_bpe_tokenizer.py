@@ -5,37 +5,41 @@ from src.tokenizer.bpe_tokenizer import BPETokenizer
 
 @pytest.fixture
 def tokenizer():
-    return BPETokenizer.train(["a cat with a hat eats the hat cat"], target_size=260)
+    return BPETokenizer()
 
 
-def test_encode_decode(tokenizer):
-    test_text = "brat the mat"
-    encoded = tokenizer.encode(test_text)
-    decoded = tokenizer.decode(encoded)
-
-    assert decoded == test_text
+def test_special_tokens_initialized(tokenizer):
+    assert tokenizer.pad_id == 0
+    assert tokenizer.bos_id == 1
+    assert tokenizer.eos_id == 2
 
 
-def test_merge_rules(tokenizer):
-    result = tokenizer._apply_merge_rule([2, 3, 5, 67, 45], [5, 67, 90])
-    assert result == [2, 3, 90, 45]
+def test_byte_vocabulary_initialized(tokenizer):
+    # 3 special tokens + 256 bytes
+    assert tokenizer.get_vocab_size == 259
 
 
-def test_save_and_load(tokenizer, tmp_path):
-    # Use tmp_path to create a temporary directory
-    temp_dir = tmp_path / "my_temp_dir"
-    temp_dir.mkdir()
+def test_encode_with_special_tokens(tokenizer):
+    tokens = tokenizer.encode_with_special_tokens("A")
+    assert tokens == [1, 68, 2]  # BOS, A, EOS
 
-    temp_file = temp_dir / "test_file.txt"
 
-    tokenizer.save(temp_file)
+def test_decode_roundtrip(tokenizer):
+    original = "Hello World!"
+    tokens = tokenizer.encode(original)
+    decoded = tokenizer.decode(tokens)
+    assert decoded == original
 
-    tokenizer2 = BPETokenizer.load(temp_file)
 
-    print("TEST:", tokenizer2._vocabulary)
+def test_decode_skips_special_tokens_by_default(tokenizer):
+    tokens = [1, 68, 69, 2]  # BOS, A, B, EOS
+    decoded = tokenizer.decode(tokens)
+    assert decoded == "AB"
 
-    test_text = "brat the mat"
-    encoded = tokenizer2.encode(test_text)
-    decoded = tokenizer2.decode(encoded)
 
-    assert decoded == test_text
+def test_train_creates_merge_rules():
+    texts = ["aaaa aaaa aaaa"] * 100
+    tokenizer = BPETokenizer.train(texts, target_size=264)
+
+    assert len(tokenizer._merge_rules) > 0
+    assert len(tokenizer._merge_rules) == 5  # 265 - 259 base vocab

@@ -1,5 +1,6 @@
 from src.enums import TokenizerTypeEnum
 from src.enums.types import SpecialTokensEnum
+from src.tokenizer.bpe_tokenizer import BPETokenizer
 
 
 def encode_char(texts: list[str], tokenizer) -> list[int]:
@@ -7,7 +8,7 @@ def encode_char(texts: list[str], tokenizer) -> list[int]:
     return tokenizer.encode(text_joined)
 
 
-def encode_bpe(texts: list[str], tokenizer, batch_size: int = 1000) -> list[int]:
+def encode_hugging_face_bpe(texts: list[str], tokenizer, batch_size: int = 1000) -> list[int]:
     all_ids = []
 
     bos_id = tokenizer.token_to_id(SpecialTokensEnum.BOS)
@@ -25,7 +26,30 @@ def encode_bpe(texts: list[str], tokenizer, batch_size: int = 1000) -> list[int]
     return all_ids
 
 
+def encode_bpe(
+    texts: list[str],
+    tokenizer: BPETokenizer,
+    batch_size: int = 1000,
+) -> list[int]:
+    all_ids: list[int] = []
+
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i : i + batch_size]
+        encoded_batch = tokenizer.encode_batch(batch, add_special_tokens=True)
+
+        for encoded in encoded_batch:
+            all_ids.extend(encoded)
+
+    return all_ids
+
+
 def encode_texts(texts: list[str], tokenizer, tokenizer_type: TokenizerTypeEnum) -> list[int]:
-    if tokenizer_type == TokenizerTypeEnum.CHAR:
-        return encode_char(texts, tokenizer)
-    return encode_bpe(texts, tokenizer)
+    match tokenizer_type:
+        case TokenizerTypeEnum.CHAR:
+            return encode_char(texts, tokenizer)
+        case TokenizerTypeEnum.BPE_HUGGING_FACE:
+            return encode_hugging_face_bpe(texts, tokenizer)
+        case TokenizerTypeEnum.BPE:
+            return encode_bpe(texts, tokenizer)
+
+    raise ValueError(f"Unknown tokenizer type: {tokenizer_type}")

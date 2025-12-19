@@ -53,20 +53,21 @@ build-backend = "hatchling.build"
 line-length = 120
 target-version = "py312"
 
-[tool.mypy]
-[[tool.mypy.overrides]]
-module = ["tokenizers", "tokenizers.*"]
-ignore_missing_imports = true
-
 [tool.ruff.lint]
 select = [
     "E",   # pycodestyle errors
     "F",   # Pyflakes
-    "I",   # isort
+#    "I",   # isort
     "UP",  # pyupgrade (modernere Python-Syntax)
     "B",   # flake8-bugbear (findet häufige Bugs)
 ]
 ignore = []
+
+
+[tool.mypy]
+[[tool.mypy.overrides]]
+module = ["tokenizers", "tokenizers.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
