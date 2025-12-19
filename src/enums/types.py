@@ -15,3 +15,8 @@ class SpecialTokensEnum(StrEnum):
     PAD = "<PAD>"
     EOS = "<EOS>"
     BOS = "<BOS>"
+
+
+class DataEnum(StrEnum):
+    SYNOPSIS = "synopsis"
+    REVIEW_TEXT = "review_text"
