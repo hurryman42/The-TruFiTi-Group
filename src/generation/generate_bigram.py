@@ -14,7 +14,7 @@ from src.utils.device import get_device
 from src.utils.tokenizer_loader import load_bpe_hugging_face_tokenizer, load_char_tokenizer, load_bpe_custom_tokenizer
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-TokenizerAny = CharTokenizer | HFTokenizer | BPETokenizer
+type TokenizerAny = CharTokenizer | HFTokenizer | BPETokenizer
 
 
 def load_model(model_path: Path):
