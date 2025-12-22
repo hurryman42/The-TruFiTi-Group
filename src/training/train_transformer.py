@@ -6,6 +6,7 @@ from datetime import datetime
 import torch
 
 import wandb
+
 from src.config import (
     MODEL_DIR,
     get_data_path,
@@ -29,6 +30,7 @@ from src.enums import (
 )
 from src.models.transformer.transformer import TransformerDecoderOnly
 from src.training.trainer import TrainingMetrics, train_loop
+from src.utils import read_file_synopsis_review_pairs
 from src.utils.data_loader import read_file_only_reviews
 from src.utils.device import get_device
 from src.utils.encoding import encode_texts
@@ -77,11 +79,10 @@ def save_model(model, vocab_size: int, num_params: int, config: dict):
     return save_path
 
 
-def save_metrics(metrics: TrainingMetrics, num_params: int):
+def save_metrics(metrics: TrainingMetrics, num_params: int, level: str):
     params_millions = num_params / 1_000_000
-    metrics_path = (
-        MODEL_DIR / f"transformer_{datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}_{params_millions:.1f}M_metrics.json"
-    )
+    time = datetime.now().strftime("%y-%m-%d_%H:%M:%S")
+    metrics_path = MODEL_DIR / f"transformer_L{level}_{params_millions:.1f}M_{time}_metrics.json"
 
     with open(metrics_path, "w") as f:
         json.dump(
@@ -146,7 +147,11 @@ def main(config: dict):
     data_cfg = config[SectionEnum.DATA]
 
     data_path = get_data_path(config)
-    texts = read_file_only_reviews(data_path)
+    print(f"Level: {data_cfg[DataConfigEnum.LEVEL]}")
+    if data_cfg[DataConfigEnum.LEVEL] == 1:
+        texts = read_file_only_reviews(data_path)
+    else:  # data_cfg[DataConfigEnum.LEVEL] == 2
+        texts = read_file_synopsis_review_pairs(data_path)
     random.seed(data_cfg[DataConfigEnum.SEED])
     random.shuffle(texts)
 
@@ -206,7 +211,7 @@ def main(config: dict):
     )
 
     save_model(model, vocab_size, num_params, config)
-    save_metrics(metrics, num_params)
+    save_metrics(metrics, num_params, data_cfg[DataConfigEnum.LEVEL])
 
     wandb.finish()
 

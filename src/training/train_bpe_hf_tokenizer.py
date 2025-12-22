@@ -1,3 +1,5 @@
+"""Training script for the BPE tokenizer from Hugging Face."""
+
 import argparse
 from pathlib import Path
 
@@ -8,7 +10,7 @@ from tokenizers.pre_tokenizers import ByteLevel
 from tokenizers.trainers import BpeTrainer
 
 from src.enums.types import SpecialTokensEnum
-from src.utils.data_loader import read_file_only_reviews
+from src.utils.data_loader import read_file_only_reviews, read_file_synopsis_review_pairs
 
 # TODO choose tokenizer size in config file
 VOCAB_SIZE = 4000
@@ -32,11 +34,19 @@ def train_bpe_tokenizer(texts: list[str], vocab_size: int) -> Tokenizer:
     return tokenizer
 
 
-def train_and_save(input_path: Path, output_path: Path) -> Tokenizer:
-    texts = read_file_only_reviews(input_path)
+def train_and_save(input_path: Path, output_path: Path, level: int) -> Tokenizer:
+    print(f"Level: {level}")
+    if level == 1:
+        texts = read_file_only_reviews(input_path)
+    else:  # level == 2
+        texts = read_file_synopsis_review_pairs(input_path)
     print(f"Number of texts: {len(texts):,}".replace(",", "."))
 
-    tokenizer = train_bpe_tokenizer(texts, vocab_size=VOCAB_SIZE)
+    part_texts = texts[:10000]
+
+    print(f"Training on texts: {len(part_texts):,}".replace(",", "."))
+
+    tokenizer = train_bpe_tokenizer(part_texts, vocab_size=VOCAB_SIZE)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     tokenizer.save(str(output_path))
@@ -59,6 +69,7 @@ def verify(tokenizer: Tokenizer, output_path: Path) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, required=True)
+    parser.add_argument("--l", type=str, required=True, help="Level")
     args, _ = parser.parse_known_args()
 
     dataset_path = Path(args.dataset)
@@ -66,10 +77,10 @@ if __name__ == "__main__":
         dataset_path = BASE_DIR / "data" / dataset_path
 
     dataset_name = dataset_path.stem
-    save_path = BASE_DIR / "tokenizer" / f"bpe_hf_{dataset_name}.json"
+    save_path = BASE_DIR / "tokenizer" / f"bpe_hf_L{args.l}_{dataset_name}.json"
 
     if dataset_path.suffix != ".jsonl":
         raise ValueError("Dataset must be a .jsonl file")
 
-    tokenizer = train_and_save(dataset_path, save_path)
+    tokenizer = train_and_save(dataset_path, save_path, int(args.l))
     verify(tokenizer, save_path)

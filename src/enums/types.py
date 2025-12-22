@@ -20,4 +20,4 @@ class SpecialTokensEnum(StrEnum):
 
 class DataEnum(StrEnum):
     SYNOPSIS = "synopsis"
-    REVIEW_TEXT = "review_text"
+    REVIEW_TEXTS = "review_texts"

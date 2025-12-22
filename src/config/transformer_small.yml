@@ -24,4 +24,5 @@ data:
   val_size: 0.1
   test_size: 0.1
   file: letterboxd_filtered_0.95.jsonl
+  level: 1
   seed: 42

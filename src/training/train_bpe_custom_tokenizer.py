@@ -1,14 +1,14 @@
 """Training script for the custom BPE tokenizer."""
 
+import argparse
 from pathlib import Path
 
 from src.tokenizer.bpe_tokenizer import BPETokenizer
-from src.utils.data_loader import read_file_only_reviews
+from src.utils.data_loader import read_file_only_reviews, read_file_synopsis_review_pairs
 
+# TODO choose tokenizer size in config file
 VOCAB_SIZE = 2000
-BASE_DIR = Path(__file__).resolve().parent.parent
-INPUT_FILE = BASE_DIR.parent / "data" / "letterboxd_filtered.jsonl"
-SAVE_PATH = BASE_DIR.parent / "tokenizer" / "bpe_custom_tokenizer.json"
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 def train_bpe_tokenizer(texts: list[str], vocab_size: int) -> BPETokenizer:
@@ -22,8 +22,12 @@ def train_bpe_tokenizer(texts: list[str], vocab_size: int) -> BPETokenizer:
     return tokenizer
 
 
-def train_and_save() -> BPETokenizer:
-    texts = read_file_only_reviews(INPUT_FILE)
+# TODO: add progress bar
+def train_and_save(input_path: Path, output_path: Path, level: int) -> BPETokenizer:
+    if level == 1:
+        texts = read_file_only_reviews(input_path)
+    else:  # level == 2
+        texts = read_file_synopsis_review_pairs(input_path)
     print(f"Number of texts: {len(texts):,}".replace(",", "."))
 
     part_texts = texts[:10000]
@@ -32,21 +36,21 @@ def train_and_save() -> BPETokenizer:
 
     tokenizer = train_bpe_tokenizer(part_texts, vocab_size=VOCAB_SIZE)
 
-    SAVE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    tokenizer.save(SAVE_PATH)
-    print(f"Tokenizer saved to {SAVE_PATH}")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    tokenizer.save(output_path)
+    print(f"Tokenizer saved to {output_path}")
 
     return tokenizer
 
 
-def verify(tokenizer: BPETokenizer) -> None:
+def verify(tokenizer: BPETokenizer, output_path: Path) -> None:
     test_texts = [
         "Hello World!",
         "This is a great movie! 🎬",
         "Größe, naïve, café",
     ]
 
-    loaded = BPETokenizer.load(SAVE_PATH)
+    loaded = BPETokenizer.load(output_path)
 
     for text in test_texts:
         original_encoded = tokenizer.encode(text)
@@ -68,5 +72,20 @@ def verify(tokenizer: BPETokenizer) -> None:
 
 
 if __name__ == "__main__":
-    tokenizer = train_and_save()
-    verify(tokenizer)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", type=str, required=True)
+    parser.add_argument("--l", type=str, required=True, help="Level")
+    args, _ = parser.parse_known_args()
+
+    dataset_path = Path(args.dataset)
+    if not dataset_path.is_absolute():
+        dataset_path = BASE_DIR / "data" / dataset_path
+
+    dataset_name = dataset_path.stem
+    save_path = BASE_DIR / "tokenizer" / f"bpe_custom_L{args.l}_{dataset_name}.json"
+
+    if dataset_path.suffix != ".jsonl":
+        raise ValueError("Dataset must be a .jsonl file")
+
+    tokenizer = train_and_save(dataset_path, save_path, int(args.l))
+    verify(tokenizer, save_path)
