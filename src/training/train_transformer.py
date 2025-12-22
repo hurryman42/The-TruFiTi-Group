@@ -1,11 +1,13 @@
-import argparse
 import json
+import torch
+import wandb
 import random
+import argparse
 from datetime import datetime
 
-import torch
-
-import wandb
+from tokenizers import Tokenizer as HFTokenizer
+from src.tokenizer.bpe_tokenizer import BPETokenizer
+from src.tokenizer.char_tokenizer import CharTokenizer
 
 from src.config import (
     MODEL_DIR,
@@ -37,6 +39,8 @@ from src.utils.encoding import encode_texts
 from src.utils.tokenizer_loader import load_bpe_hugging_face_tokenizer, load_char_tokenizer, load_bpe_custom_tokenizer
 from src.utils.training import train_val_test_split
 from src.utils.wandb_transfomer_config_override import apply_wandb_overrides
+
+type TokenizerAny = CharTokenizer | HFTokenizer | BPETokenizer
 
 
 def create_forward_pass():
@@ -137,6 +141,7 @@ def main(config: dict):
     print(f"Using device: {device}")
     print(f"Tokenizer: {tokenizer_name}\n")
 
+    tokenizer: TokenizerAny
     if tokenizer_type == TokenizerTypeEnum.CHAR:
         tokenizer = load_char_tokenizer(tokenizer_path)
         vocab_size = tokenizer.get_vocab_size
