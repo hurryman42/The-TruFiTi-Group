@@ -8,7 +8,7 @@ from src.models.bigram_language_model import BigramLanguageModel
 from src.models.embeddings.positional_encoding import PositionalEncoding
 from src.models.embeddings.token_embedding import TokenEmbedding
 from src.utils.device import get_device
-from src.utils.tokenizer_loader import load_bpe_hugging_face_tokenizer, load_char_tokenizer
+from src.utils.tokenizer_loader import load_bpe_hugging_face_tokenizer, load_char_tokenizer, load_bpe_custom_tokenizer
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -20,6 +20,7 @@ def load_model(model_path: Path):
     checkpoint = torch.load(model_path, map_location=device)
 
     tokenizer_type = TokenizerTypeEnum(checkpoint[CheckpointEnum.TOKENIZER_TYPE])
+    tokenizer_name = checkpoint[CheckpointEnum.TOKENIZER_NAME]
 
     print(f"Tokenizer: {tokenizer_type}")
     print(
@@ -28,12 +29,13 @@ def load_model(model_path: Path):
         f"seq_len: {checkpoint[CheckpointEnum.SEQ_LEN]}\n"
     )
 
+    tokenizer_path = BASE_DIR / "tokenizer" / tokenizer_name
     if tokenizer_type == TokenizerTypeEnum.CHAR:
-        tokenizer_path = BASE_DIR / "tokenizer" / "char_tokenizer.json"
         tokenizer = load_char_tokenizer(tokenizer_path)
-    else:
-        tokenizer_path = BASE_DIR / "tokenizer" / "bpe_hugging_face_tokenizer.json"
+    elif tokenizer_type == TokenizerTypeEnum.BPE_HUGGING_FACE:
         tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
+    else:  # tokenizer_type == TokenizerTypeEnum.BPE:
+        tokenizer = load_bpe_custom_tokenizer(tokenizer_path)
 
     token_embedding = TokenEmbedding(
         checkpoint[CheckpointEnum.VOCAB_SIZE], checkpoint[CheckpointEnum.D_MODEL], scale=False

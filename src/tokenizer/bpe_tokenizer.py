@@ -132,7 +132,7 @@ class BPETokenizer(BaseTokenizer):
         return tokens
 
     def encode_with_special_tokens(self, text: str) -> list[int]:
-        return [self.bos_id, *self.encode(text), self.eos_id]
+        return [self.bos_id] + self.encode(text) + [self.eos_id]
 
     def encode_batch(
         self,
