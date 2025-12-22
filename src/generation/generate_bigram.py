@@ -1,7 +1,10 @@
+import torch
 import argparse
 from pathlib import Path
 
-import torch
+from tokenizers import Tokenizer as HFTokenizer
+from src.tokenizer.bpe_tokenizer import BPETokenizer
+from src.tokenizer.char_tokenizer import CharTokenizer
 
 from src.enums import CheckpointEnum, TokenizerTypeEnum
 from src.models.bigram_language_model import BigramLanguageModel
@@ -11,6 +14,7 @@ from src.utils.device import get_device
 from src.utils.tokenizer_loader import load_bpe_hugging_face_tokenizer, load_char_tokenizer, load_bpe_custom_tokenizer
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+TokenizerAny = CharTokenizer | HFTokenizer | BPETokenizer
 
 
 def load_model(model_path: Path):
@@ -29,6 +33,7 @@ def load_model(model_path: Path):
         f"seq_len: {checkpoint[CheckpointEnum.SEQ_LEN]}\n"
     )
 
+    tokenizer: TokenizerAny
     tokenizer_path = BASE_DIR / "tokenizer" / tokenizer_name
     if tokenizer_type == TokenizerTypeEnum.CHAR:
         tokenizer = load_char_tokenizer(tokenizer_path)
