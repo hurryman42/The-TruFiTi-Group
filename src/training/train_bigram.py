@@ -1,7 +1,10 @@
-import argparse
 import json
-
 import torch
+import argparse
+
+from tokenizers import Tokenizer as HFTokenizer
+from src.tokenizer.bpe_tokenizer import BPETokenizer
+from src.tokenizer.char_tokenizer import CharTokenizer
 
 from src.config import MODEL_DIR, get_data_path, get_model_type, get_tokenizer_path, get_tokenizer_type, load_config
 from src.enums import (
@@ -21,8 +24,10 @@ from src.training.trainer import TrainingMetrics, train_loop
 from src.utils.data_loader import read_file_only_reviews
 from src.utils.device import get_device
 from src.utils.encoding import encode_texts
-from src.utils.tokenizer_loader import load_bpe_hugging_face_tokenizer, load_char_tokenizer
+from src.utils.tokenizer_loader import load_bpe_hugging_face_tokenizer, load_char_tokenizer, load_bpe_custom_tokenizer
 from src.utils.training import train_val_test_split
+
+type TokenizerAny = CharTokenizer | HFTokenizer | BPETokenizer
 
 
 def create_forward_pass(token_embedding, pos_encoding):
@@ -65,7 +70,9 @@ def save_model(model, token_embedding, pos_encoding, vocab_size: int, config: di
 
 def save_metrics(metrics: TrainingMetrics, tokenizer_type: TokenizerTypeEnum):
     if tokenizer_type == TokenizerTypeEnum.BPE_HUGGING_FACE:
-        metrics_path = MODEL_DIR / "bigram_model_bpe_hugging_face_metrics.json"
+        metrics_path = MODEL_DIR / "bigram_model_bpe_hf_metrics.json"
+    elif tokenizer_type == TokenizerTypeEnum.BPE:
+        metrics_path = MODEL_DIR / "bigram_model_bpe_custom_metrics.json"
     else:
         metrics_path = MODEL_DIR / "bigram_model_metrics.json"
 
@@ -93,12 +100,18 @@ def main(config: dict):
     print(f"Using device: {device}")
     print(f"Tokenizer: {tokenizer_type}\n")
 
+    tokenizer: TokenizerAny
     if tokenizer_type == TokenizerTypeEnum.CHAR:
         tokenizer = load_char_tokenizer(tokenizer_path)
         vocab_size = tokenizer.get_vocab_size
-    else:
+    elif tokenizer_type == TokenizerTypeEnum.BPE_HUGGING_FACE:
         tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
         vocab_size = tokenizer.get_vocab_size()
+    elif tokenizer_type == TokenizerTypeEnum.BPE:
+        tokenizer = load_bpe_custom_tokenizer(tokenizer_path)
+        vocab_size = tokenizer.get_vocab_size
+    else:
+        raise ValueError(f"Unknown tokenizer type: {tokenizer_type}")
 
     data_path = get_data_path(config)
     texts = read_file_only_reviews(data_path)

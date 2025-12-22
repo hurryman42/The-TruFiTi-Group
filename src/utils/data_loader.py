@@ -13,8 +13,8 @@ def read_file_only_reviews(file_path) -> list[str]:
                 print(f"Invalid JSON in line {i}: {e}")
                 continue
 
-            if data.get(DataEnum.REVIEW_TEXT):
-                reviews.extend(data[DataEnum.REVIEW_TEXT])
+            if data.get(DataEnum.REVIEW_TEXTS):
+                reviews.extend(data[DataEnum.REVIEW_TEXTS])
 
     print(f"Number of reviews: {len(reviews):,}".replace(",", "."))
 
@@ -32,10 +32,10 @@ def read_file_synopsis_review_pairs(file_path) -> list[str]:
                 continue
 
             synopsis = data.get(DataEnum.SYNOPSIS)
-            if not synopsis or not data.get(DataEnum.REVIEW_TEXT):
+            if not synopsis or not data.get(DataEnum.REVIEW_TEXTS):
                 continue
 
-            for review in data[DataEnum.REVIEW_TEXT]:
+            for review in data[DataEnum.REVIEW_TEXTS]:
                 pairs.append(f"{synopsis} {review}")
 
     print(f"Number of synopsis-review-pairs: {len(pairs):,}".replace(",", "."))
