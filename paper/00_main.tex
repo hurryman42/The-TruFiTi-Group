@@ -1,0 +1,29 @@
+\documentclass[11pt, DIV=15, bibliography=totoc]{scrartcl}
+
+\usepackage{preamble}
+
+\begin{document}
+
+% Title page (includes abstract)
+\input{00_titlepage}
+
+% Main content
+\newpage
+\input{01_introduction}
+\input{02_data}
+\input{03_model}
+\input{04_evaluation}
+\input{05_results}
+\input{06_conclusion}
+
+% References
+\newpage
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+% Appendix
+\newpage
+\appendix
+\input{appendix}
+
+\end{document}
