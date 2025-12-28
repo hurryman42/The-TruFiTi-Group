@@ -36,17 +36,16 @@ def train_bpe_tokenizer(texts: list[str], vocab_size: int) -> Tokenizer:
 
 def train_and_save(input_path: Path, output_path: Path, level: int) -> Tokenizer:
     print(f"Level: {level}")
-    if level == 1:
-        texts = read_file_only_reviews(input_path)
-    else:  # level == 2
-        texts = read_file_synopsis_review_pairs(input_path)
+    match level:
+        case 1:
+            texts = read_file_only_reviews(input_path)
+        case 2:
+            texts = read_file_synopsis_review_pairs(input_path)
+        case _:
+            raise ValueError(f"Invalid level input: {level}")
     print(f"Number of texts: {len(texts):,}".replace(",", "."))
 
-    part_texts = texts[:10000]
-
-    print(f"Training on texts: {len(part_texts):,}".replace(",", "."))
-
-    tokenizer = train_bpe_tokenizer(part_texts, vocab_size=VOCAB_SIZE)
+    tokenizer = train_bpe_tokenizer(texts, vocab_size=VOCAB_SIZE)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     tokenizer.save(str(output_path))

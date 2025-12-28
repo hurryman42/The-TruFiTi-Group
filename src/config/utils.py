@@ -58,7 +58,7 @@ def get_tokenizer_type(config: dict[str, Any]) -> TokenizerTypeEnum:
 
 def get_tokenizer_name(config: dict[str, Any]) -> str:
     tokenizer_type = get_tokenizer_type(config)
-    level = get_level_str(config)
+    level = get_level(config)
     data_file = get_data_name(config)
     if tokenizer_type == TokenizerTypeEnum.CHAR:
         return "char_tokenizer.json"
@@ -81,13 +81,13 @@ def get_data_name(config: dict[str, Any]) -> str:
     return Path(config[SectionEnum.DATA][DataConfigEnum.FILE]).stem
 
 
-def get_level_str(config: dict[str, Any]) -> str:
+def get_level(config: dict[str, Any]) -> str:
     return config[SectionEnum.DATA][DataConfigEnum.LEVEL]
 
 
 def get_model_save_path(config: dict[str, Any], num_params: int) -> Path:
     model_type = get_model_type(config)
-    level = get_level_str(config)
+    level = get_level(config)
     params_millions = num_params / 1_000_000
 
     if model_type == ModelTypeEnum.BIGRAM:

@@ -51,3 +51,5 @@ def encode_texts(texts: list[str], tokenizer, tokenizer_type: TokenizerTypeEnum)
             return encode_hugging_face_bpe(texts, tokenizer)
         case TokenizerTypeEnum.BPE:
             return encode_bpe(texts, tokenizer)
+        case _:
+            raise ValueError(f"Unknown tokenizer type: {tokenizer_type}")

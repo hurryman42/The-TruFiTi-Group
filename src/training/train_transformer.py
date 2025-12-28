@@ -40,7 +40,7 @@ from src.utils.tokenizer_loader import load_bpe_hugging_face_tokenizer, load_cha
 from src.utils.training import train_val_test_split
 from src.utils.wandb_transfomer_config_override import apply_wandb_overrides
 
-type TokenizerAny = CharTokenizer | HFTokenizer | BPETokenizer
+type AnyTokenizer = CharTokenizer | HFTokenizer | BPETokenizer
 
 
 def create_forward_pass():
@@ -141,27 +141,31 @@ def main(config: dict):
     print(f"Using device: {device}")
     print(f"Tokenizer: {tokenizer_name}\n")
 
-    tokenizer: TokenizerAny
-    if tokenizer_type == TokenizerTypeEnum.CHAR:
-        tokenizer = load_char_tokenizer(tokenizer_path)
-        vocab_size = tokenizer.get_vocab_size
-    elif tokenizer_type == TokenizerTypeEnum.BPE_HUGGING_FACE:
-        tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
-        vocab_size = tokenizer.get_vocab_size()
-    elif tokenizer_type == TokenizerTypeEnum.BPE:
-        tokenizer = load_bpe_custom_tokenizer(tokenizer_path)
-        vocab_size = tokenizer.get_vocab_size
-    else:
-        raise ValueError(f"Unknown tokenizer type: {tokenizer_type}")
+    tokenizer: AnyTokenizer
+    match tokenizer_type:
+        case TokenizerTypeEnum.CHAR:
+            tokenizer = load_char_tokenizer(tokenizer_path)
+            vocab_size = tokenizer.get_vocab_size
+        case TokenizerTypeEnum.BPE_HUGGING_FACE:
+            tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
+            vocab_size = tokenizer.get_vocab_size()
+        case TokenizerTypeEnum.BPE:
+            tokenizer = load_bpe_custom_tokenizer(tokenizer_path)
+            vocab_size = tokenizer.get_vocab_size
+        case _:
+            raise ValueError(f"Unknown tokenizer type: {tokenizer_type}")
 
     data_cfg = config[SectionEnum.DATA]
 
     data_path = get_data_path(config)
     print(f"Level: {data_cfg[DataConfigEnum.LEVEL]}")
-    if data_cfg[DataConfigEnum.LEVEL] == 1:
-        texts = read_file_only_reviews(data_path)
-    else:  # data_cfg[DataConfigEnum.LEVEL] == 2
-        texts = read_file_synopsis_review_pairs(data_path)
+    match data_cfg[DataConfigEnum.LEVEL]:
+        case 1:
+            texts = read_file_only_reviews(data_path)
+        case 2:
+            texts = read_file_synopsis_review_pairs(data_path)
+        case _:
+            raise ValueError(f"Invalid level input: {data_cfg[DataConfigEnum.LEVEL]}")
     random.seed(data_cfg[DataConfigEnum.SEED])
     random.shuffle(texts)
 

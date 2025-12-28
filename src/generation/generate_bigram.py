@@ -14,7 +14,7 @@ from src.utils.device import get_device
 from src.utils.tokenizer_loader import load_bpe_hugging_face_tokenizer, load_char_tokenizer, load_bpe_custom_tokenizer
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-type TokenizerAny = CharTokenizer | HFTokenizer | BPETokenizer
+type AnyTokenizer = CharTokenizer | HFTokenizer | BPETokenizer
 
 
 def load_model(model_path: Path):
@@ -33,14 +33,15 @@ def load_model(model_path: Path):
         f"seq_len: {checkpoint[CheckpointEnum.SEQ_LEN]}\n"
     )
 
-    tokenizer: TokenizerAny
+    tokenizer: AnyTokenizer
     tokenizer_path = BASE_DIR / "tokenizer" / tokenizer_name
-    if tokenizer_type == TokenizerTypeEnum.CHAR:
-        tokenizer = load_char_tokenizer(tokenizer_path)
-    elif tokenizer_type == TokenizerTypeEnum.BPE_HUGGING_FACE:
-        tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
-    else:  # tokenizer_type == TokenizerTypeEnum.BPE:
-        tokenizer = load_bpe_custom_tokenizer(tokenizer_path)
+    match tokenizer_type:
+        case TokenizerTypeEnum.CHAR:
+            tokenizer = load_char_tokenizer(tokenizer_path)
+        case TokenizerTypeEnum.BPE_HUGGING_FACE:
+            tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
+        case _:  # TokenizerTypeEnum.BPE
+            tokenizer = load_bpe_custom_tokenizer(tokenizer_path)
 
     token_embedding = TokenEmbedding(
         checkpoint[CheckpointEnum.VOCAB_SIZE], checkpoint[CheckpointEnum.D_MODEL], scale=False

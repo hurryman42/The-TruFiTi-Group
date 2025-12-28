@@ -27,7 +27,7 @@ from src.utils.encoding import encode_texts
 from src.utils.tokenizer_loader import load_bpe_hugging_face_tokenizer, load_char_tokenizer, load_bpe_custom_tokenizer
 from src.utils.training import train_val_test_split
 
-type TokenizerAny = CharTokenizer | HFTokenizer | BPETokenizer
+type AnyTokenizer = CharTokenizer | HFTokenizer | BPETokenizer
 
 
 def create_forward_pass(token_embedding, pos_encoding):
@@ -100,18 +100,19 @@ def main(config: dict):
     print(f"Using device: {device}")
     print(f"Tokenizer: {tokenizer_type}\n")
 
-    tokenizer: TokenizerAny
-    if tokenizer_type == TokenizerTypeEnum.CHAR:
-        tokenizer = load_char_tokenizer(tokenizer_path)
-        vocab_size = tokenizer.get_vocab_size
-    elif tokenizer_type == TokenizerTypeEnum.BPE_HUGGING_FACE:
-        tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
-        vocab_size = tokenizer.get_vocab_size()
-    elif tokenizer_type == TokenizerTypeEnum.BPE:
-        tokenizer = load_bpe_custom_tokenizer(tokenizer_path)
-        vocab_size = tokenizer.get_vocab_size
-    else:
-        raise ValueError(f"Unknown tokenizer type: {tokenizer_type}")
+    tokenizer: AnyTokenizer
+    match tokenizer_type:
+        case TokenizerTypeEnum.CHAR:
+            tokenizer = load_char_tokenizer(tokenizer_path)
+            vocab_size = tokenizer.get_vocab_size
+        case TokenizerTypeEnum.BPE_HUGGING_FACE:
+            tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
+            vocab_size = tokenizer.get_vocab_size()
+        case TokenizerTypeEnum.BPE:
+            tokenizer = load_bpe_custom_tokenizer(tokenizer_path)
+            vocab_size = tokenizer.get_vocab_size
+        case _:
+            raise ValueError(f"Unknown tokenizer type: {tokenizer_type}")
 
     data_path = get_data_path(config)
     texts = read_file_only_reviews(data_path)
