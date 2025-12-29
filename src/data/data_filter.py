@@ -123,8 +123,8 @@ def is_valid_review(
     if not is_english(text, detector):
         return False
 
-    if not review_adjuster.is_grammar_adequate(text):
-        return False
+    #if not review_adjuster.is_grammar_adequate(text):
+    #    return False
 
     return True
 
@@ -149,7 +149,8 @@ def filter_per_film(
             continue
         seen_hashes.add(text_hash)
 
-        filtered_reviews.append(review_text)
+        fixed_review_text = review_adjuster.adjust_review(review_text)
+        filtered_reviews.append(fixed_review_text)
 
     if not filtered_reviews:
         return None
@@ -232,7 +233,7 @@ def main():
                     processed_count += 1
                     filtered_films += 1
                     filtered_reviews += len(filtered["review_texts"])
-                    if processed_count % 100 == 0:
+                    if processed_count == 1 or processed_count % 100 == 0:
                         print(f"Processed {processed_count} entries")
                 else:
                     skipped_count += 1
