@@ -4,6 +4,7 @@ import json
 import os
 import re
 import unicodedata
+from tqdm import tqdm
 
 from lingua import Language, LanguageDetectorBuilder
 from src.data.data_adjustment import ReviewAdjuster
@@ -220,7 +221,7 @@ def main():
 
     with open(args.input_file, encoding="utf-8") as infile, open(output_file, "w", encoding="utf-8") as outfile:
         seen_hashes = set()
-        for index, line in enumerate(infile, 1):
+        for index, line in tqdm(enumerate(infile, 1)):
             try:
                 data = json.loads(line)
                 total_films += 1
@@ -233,8 +234,6 @@ def main():
                     processed_count += 1
                     filtered_films += 1
                     filtered_reviews += len(filtered["review_texts"])
-                    if processed_count == 1 or processed_count % 100 == 0:
-                        print(f"Processed {processed_count} entries")
                 else:
                     skipped_count += 1
             except json.JSONDecodeError as e:

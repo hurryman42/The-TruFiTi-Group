@@ -4,7 +4,7 @@ import language_tool_python.utils
 from spellchecker import SpellChecker
 import language_tool_python as lang_tool
 
-class ReviewAdjuster():
+class ReviewAdjuster:
     def __init__(self):
         self.spell = SpellChecker(distance=1)
         self.sensitivity = 0.9
