@@ -5,10 +5,6 @@ import random
 import argparse
 from datetime import datetime
 
-from tokenizers import Tokenizer as HFTokenizer
-from src.tokenizer.bpe_tokenizer import BPETokenizer
-from src.tokenizer.char_tokenizer import CharTokenizer
-
 from src.config import (
     MODEL_DIR,
     get_data_path,
@@ -26,7 +22,6 @@ from src.enums import (
     DataSplitEnum,
     ModelTypeEnum,
     SectionEnum,
-    TokenizerTypeEnum,
     TrainingEnum,
     TransformerModelEnum,
 )
@@ -36,11 +31,9 @@ from src.utils import read_file_synopsis_review_pairs
 from src.utils.data_loader import read_file_only_reviews
 from src.utils.device import get_device
 from src.utils.encoding import encode_texts
-from src.utils.tokenizer_loader import load_bpe_hugging_face_tokenizer, load_char_tokenizer, load_bpe_custom_tokenizer
+from src.utils.tokenizer_loader import load_tokenizer_with_vocab_size
 from src.utils.training import train_val_test_split
 from src.utils.wandb_transfomer_config_override import apply_wandb_overrides
-
-type AnyTokenizer = CharTokenizer | HFTokenizer | BPETokenizer
 
 
 def create_forward_pass():
@@ -141,19 +134,7 @@ def main(config: dict):
     print(f"Using device: {device}")
     print(f"Tokenizer: {tokenizer_name}\n")
 
-    tokenizer: AnyTokenizer
-    match tokenizer_type:
-        case TokenizerTypeEnum.CHAR:
-            tokenizer = load_char_tokenizer(tokenizer_path)
-            vocab_size = tokenizer.get_vocab_size
-        case TokenizerTypeEnum.BPE_HUGGING_FACE:
-            tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
-            vocab_size = tokenizer.get_vocab_size()
-        case TokenizerTypeEnum.BPE:
-            tokenizer = load_bpe_custom_tokenizer(tokenizer_path)
-            vocab_size = tokenizer.get_vocab_size
-        case _:
-            raise ValueError(f"Unknown tokenizer type: {tokenizer_type}")
+    tokenizer, vocab_size = load_tokenizer_with_vocab_size(tokenizer_type, tokenizer_path)
 
     data_cfg = config[SectionEnum.DATA]
 
