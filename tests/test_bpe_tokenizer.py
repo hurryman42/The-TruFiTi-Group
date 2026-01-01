@@ -1,6 +1,11 @@
 import pytest
 
 from src.tokenizer.bpe_tokenizer import BPETokenizer
+from src.enums.types import SpecialTokensEnum
+
+
+NUM_SPECIAL = len(SpecialTokensEnum)
+BASE_VOCAB_SIZE = NUM_SPECIAL + 256
 
 
 @pytest.fixture
@@ -15,13 +20,13 @@ def test_special_tokens_initialized(tokenizer):
 
 
 def test_byte_vocabulary_initialized(tokenizer):
-    # 3 special tokens + 256 bytes
-    assert tokenizer.get_vocab_size == 259
+    # length special tokens + 256 bytes
+    assert tokenizer.get_vocab_size == BASE_VOCAB_SIZE
 
 
 def test_encode_with_special_tokens(tokenizer):
     tokens = tokenizer.encode_with_special_tokens("A")
-    assert tokens == [1, 68, 2]  # BOS, A, EOS
+    assert tokens == [1, 65 + NUM_SPECIAL, 2]  # BOS, A, EOS
 
 
 def test_decode_roundtrip(tokenizer):
@@ -32,14 +37,15 @@ def test_decode_roundtrip(tokenizer):
 
 
 def test_decode_skips_special_tokens_by_default(tokenizer):
-    tokens = [1, 68, 69, 2]  # BOS, A, B, EOS
+    tokens = [1, 65 + NUM_SPECIAL, 66 + NUM_SPECIAL, 2]  # BOS, A, B, EOS
     decoded = tokenizer.decode(tokens)
     assert decoded == "AB"
 
 
 def test_train_creates_merge_rules():
     texts = ["aaaa aaaa aaaa"] * 100
-    tokenizer = BPETokenizer.train(texts, target_size=264)
+    tokenizer = BPETokenizer.train(texts, target_size=BASE_VOCAB_SIZE + 5)
 
+    expected_merges = (BASE_VOCAB_SIZE + 5) - BASE_VOCAB_SIZE
     assert len(tokenizer._merge_rules) > 0
-    assert len(tokenizer._merge_rules) == 5  # 265 - 259 base vocab
+    assert len(tokenizer._merge_rules) == expected_merges

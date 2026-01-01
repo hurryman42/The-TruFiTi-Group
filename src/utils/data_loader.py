@@ -1,6 +1,6 @@
 import json
 
-from src.enums.types import DataEnum
+from src.enums.types import DataEnum, SpecialTokensEnum
 
 
 def read_file_only_reviews(file_path) -> list[str]:
@@ -32,11 +32,12 @@ def read_file_synopsis_review_pairs(file_path) -> list[str]:
                 continue
 
             synopsis = data.get(DataEnum.SYNOPSIS)
-            if not synopsis or not data.get(DataEnum.REVIEW_TEXTS):
+            reviews = data.get(DataEnum.REVIEW_TEXTS)
+            if not synopsis or not reviews:
                 continue
 
-            for review in data[DataEnum.REVIEW_TEXTS]:
-                pairs.append(f"{synopsis} {review}")
+            for review in reviews:
+                pairs.append(f"{SpecialTokensEnum.SYN} {synopsis} {SpecialTokensEnum.REV} {review}")
 
     print(f"Number of synopsis-review-pairs: {len(pairs):,}".replace(",", "."))
 

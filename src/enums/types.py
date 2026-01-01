@@ -16,6 +16,8 @@ class SpecialTokensEnum(StrEnum):
     PAD = "<PAD>"
     BOS = "<BOS>"
     EOS = "<EOS>"
+    SYN = "<SYN>"
+    REV = "<REV>"
 
 
 class DataEnum(StrEnum):

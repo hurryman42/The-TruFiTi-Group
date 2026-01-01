@@ -18,7 +18,16 @@ BASE_DIR = Path(__file__).parent.parent.parent
 UI_DIR = Path(__file__).parent  # <-- src/ui/
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, required=True)
+parser.add_argument(
+    "-l",
+    "--level",
+    type=int,
+    choices=[1, 2],
+    required=True,
+    help="LeveL 1 = continue review, 2 = write review to given synopsis",
+)
 args, _ = parser.parse_known_args()
+LEVEL = args.level
 
 MODEL_PATH = Path(args.model)
 if not MODEL_PATH.is_absolute():
@@ -30,6 +39,12 @@ model, tokenizer = load_model_tokenizer_from_transformer_checkpoint(checkpoint, 
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory=UI_DIR), name="static")
+
+
+def extract_review(text: str) -> str:
+    if "<REV>" in text:
+        return text.split("<REV>", 1)[1].strip()
+    return text.strip()
 
 
 @app.get("/")
@@ -45,7 +60,16 @@ class GenerateRequest(BaseModel):
 
 @app.post("/generate")
 def generate(req: GenerateRequest):
-    review = generate_single(model, tokenizer, device, prompt=req.synopsis, length=200)
+    match LEVEL:
+        case 1:
+            prompt = req.synopsis
+        case 2:
+            prompt = f"<SYN> {req.synopsis} <REV> "
+        case _:
+            raise ValueError("Invalid level")
+
+    raw_output = generate_single(model, tokenizer, device, prompt=prompt, length=200)
+    review = extract_review(raw_output)
     return {"review": review}
 
 
