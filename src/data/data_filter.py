@@ -124,7 +124,7 @@ def is_valid_review(
     if not is_english(text, detector):
         return False
 
-    #if not review_adjuster.is_grammar_adequate(text):
+    # if not review_adjuster.is_grammar_adequate(text):
     #    return False
 
     return True

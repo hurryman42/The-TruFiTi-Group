@@ -10,9 +10,9 @@ def train_val_test_split(
     if test_size is None:
         assert train_size + val_size == 1.0, f"train_size + val_size must equal 1.0, got {train_size + val_size}"
     else:
-        assert (
-            train_size + val_size + test_size == 1.0
-        ), f"train_size + val_size + test_size must equal 1.0, got {train_size + val_size + test_size}"
+        assert train_size + val_size + test_size == 1.0, (
+            f"train_size + val_size + test_size must equal 1.0, got {train_size + val_size + test_size}"
+        )
 
     n = len(data)
     train_end = int(train_size * n)

@@ -13,7 +13,7 @@ class DistinctNMetric(BaseEvaluationMetric):
 
     @staticmethod
     def _get_ngrams(tokens: list[str], n: int) -> list[tuple[str, ...]]:
-        return [tuple(tokens[i:i + n]) for i in range(len(tokens) - n + 1)]
+        return [tuple(tokens[i : i + n]) for i in range(len(tokens) - n + 1)]
 
     def compute(self, generated: list[str], references: list[list[str]] | None = None) -> MetricResult:
         total_ngrams = 0
@@ -36,5 +36,5 @@ class DistinctNMetric(BaseEvaluationMetric):
                 "unique_ngrams": len(unique_ngrams),
                 "total_ngrams": total_ngrams,
                 "n": self.n,
-            }
+            },
         )

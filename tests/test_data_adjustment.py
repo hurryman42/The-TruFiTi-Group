@@ -1,5 +1,6 @@
 from src.data.data_adjustment import ReviewAdjuster
 
+
 def test_review_adjuster():
     review_texts = ["this is a correct sentence", "this is not a correct senence"]
     review_adjuster = ReviewAdjuster()
