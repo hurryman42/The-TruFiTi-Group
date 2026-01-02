@@ -4,8 +4,10 @@ import json
 import os
 import re
 import unicodedata
+from tqdm import tqdm
 
 from lingua import Language, LanguageDetectorBuilder
+from src.data.data_adjustment import ReviewAdjuster
 
 DEFAULT_MIN_REVIEW_WORDS = 15
 DEFAULT_MAX_EMOJIS = 5
@@ -23,6 +25,8 @@ BAD_PATTERNS = re.compile(
     r"|watchlist$"  # "French Film Noir Watchlist"
     r"|^action! -)"  # "ACTION! - KILLER MIKE"
 )
+
+review_adjuster = ReviewAdjuster()
 
 
 def count_non_latin_script_chars(text):
@@ -120,6 +124,9 @@ def is_valid_review(
     if not is_english(text, detector):
         return False
 
+    # if not review_adjuster.is_grammar_adequate(text):
+    #    return False
+
     return True
 
 
@@ -143,7 +150,8 @@ def filter_per_film(
             continue
         seen_hashes.add(text_hash)
 
-        filtered_reviews.append(review_text)
+        fixed_review_text = review_adjuster.adjust_review(review_text)
+        filtered_reviews.append(fixed_review_text)
 
     if not filtered_reviews:
         return None
@@ -213,7 +221,7 @@ def main():
 
     with open(args.input_file, encoding="utf-8") as infile, open(output_file, "w", encoding="utf-8") as outfile:
         seen_hashes = set()
-        for index, line in enumerate(infile, 1):
+        for index, line in tqdm(enumerate(infile, 1)):
             try:
                 data = json.loads(line)
                 total_films += 1
