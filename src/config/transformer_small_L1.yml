@@ -14,7 +14,7 @@ training:
   batch_size: 128
   learning_rate: 3e-4
   weight_decay: 0.01
-  max_iters: 8000
+  max_iters: 30000
   eval_interval: 250
   eval_iters: 30
   warmup_iters: 300
@@ -23,6 +23,6 @@ data:
   train_size: 0.8
   val_size: 0.1
   test_size: 0.1
-  file: letterboxd_filtered_grammar_corrected.jsonl
+  file: letterboxd_filtered_enhanced_grammar+spelling.jsonl
   level: 1
   seed: 42

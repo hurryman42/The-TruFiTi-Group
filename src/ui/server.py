@@ -13,6 +13,7 @@ from src.generation.generate_transformer import (
     load_model_tokenizer_from_transformer_checkpoint,
 )
 from src.utils.device import get_device
+from src.enums.types import SpecialTokensEnum
 
 BASE_DIR = Path(__file__).parent.parent.parent
 UI_DIR = Path(__file__).parent  # <-- src/ui/
@@ -42,8 +43,8 @@ app.mount("/static", StaticFiles(directory=UI_DIR), name="static")
 
 
 def extract_review(text: str) -> str:
-    if "<REV>" in text:
-        return text.split("<REV>", 1)[1].strip()
+    if SpecialTokensEnum.REV in text:
+        return text.split(SpecialTokensEnum.REV, 1)[1].strip()
     return text.strip()
 
 
@@ -64,12 +65,12 @@ def generate(req: GenerateRequest):
         case 1:
             prompt = req.synopsis
         case 2:
-            prompt = f"<SYN> {req.synopsis} <REV> "
+            prompt = f"{SpecialTokensEnum.SYN} {req.synopsis} {SpecialTokensEnum.REV} "
         case _:
             raise ValueError("Invalid level")
 
     raw_output = generate_single(model, tokenizer, device, prompt=prompt, length=200)
-    review = extract_review(raw_output)
+    review = extract_review(raw_output)  # TODO: does not work as intended, prompt still in output
     return {"review": review}
 
 

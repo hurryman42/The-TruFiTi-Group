@@ -66,7 +66,7 @@ If you see errors about `curl` or `python3` missing, please install them using y
 ### Training
 - `uv run -m src.training.train_bpe_hf_tokenizer --dataset [DATASET] --l [1|2]`
   - standard dataset is `letterboxd_filtered.jsonl`
-  - `l` for level (see above)
+  - `l` or `level` for level (see above)
 - `uv run -m src.training.train_transformer --config [CONFIG]`
   - for available `[CONFIG]` files, check out `/src/config/`, use file name without the `.yml`-ending
     - e.g. `transformer_default`
@@ -75,7 +75,7 @@ If you see errors about `curl` or `python3` missing, please install them using y
 `uv run -m src.generation.generate_transformer --model [MODEL] --prompt "good movie because"`
 
 ### Demo
-`uv run -m src.ui.server --model [MODEL]`
+`uv run -m src.ui.server --model [MODEL] --l [1|2]`
 
 ### Evaluation
 `uv run -m src.evaluation.evaluate_transformer --model [MODEL] --config [CONFIG]`

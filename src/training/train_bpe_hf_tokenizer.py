@@ -76,7 +76,7 @@ if __name__ == "__main__":
         dataset_path = BASE_DIR / "data" / dataset_path
 
     dataset_name = dataset_path.stem
-    save_path = BASE_DIR / "tokenizer" / f"bpe_hf_L{args.level}_{dataset_name}.json"
+    save_path = BASE_DIR / "tokenizer" / f"bpe_hf_L{args.l}_{dataset_name}.json"
 
     if dataset_path.suffix != ".jsonl":
         raise ValueError("Dataset must be a .jsonl file")
