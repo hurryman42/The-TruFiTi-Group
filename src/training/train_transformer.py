@@ -1,11 +1,10 @@
-import argparse
 import json
+import torch
+import wandb
 import random
+import argparse
 from datetime import datetime
 
-import torch
-
-import wandb
 from src.config import (
     MODEL_DIR,
     get_data_path,
@@ -23,16 +22,16 @@ from src.enums import (
     DataSplitEnum,
     ModelTypeEnum,
     SectionEnum,
-    TokenizerTypeEnum,
     TrainingEnum,
     TransformerModelEnum,
 )
 from src.models.transformer.transformer import TransformerDecoderOnly
 from src.training.trainer import TrainingMetrics, train_loop
+from src.utils import read_file_synopsis_review_pairs
 from src.utils.data_loader import read_file_only_reviews
 from src.utils.device import get_device
 from src.utils.encoding import encode_texts
-from src.utils.tokenizer_loader import load_bpe_hugging_face_tokenizer, load_char_tokenizer
+from src.utils.tokenizer_loader import load_tokenizer_with_vocab_size
 from src.utils.training import train_val_test_split
 from src.utils.wandb_transfomer_config_override import apply_wandb_overrides
 
@@ -77,11 +76,10 @@ def save_model(model, vocab_size: int, num_params: int, config: dict):
     return save_path
 
 
-def save_metrics(metrics: TrainingMetrics, num_params: int):
+def save_metrics(metrics: TrainingMetrics, num_params: int, level: str):
     params_millions = num_params / 1_000_000
-    metrics_path = (
-        MODEL_DIR / f"transformer_{datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}_{params_millions:.1f}M_metrics.json"
-    )
+    time = datetime.now().strftime("%y-%m-%d_%H:%M:%S")
+    metrics_path = MODEL_DIR / f"transformer_L{level}_{params_millions:.1f}M_{time}_metrics.json"
 
     with open(metrics_path, "w") as f:
         json.dump(
@@ -136,17 +134,19 @@ def main(config: dict):
     print(f"Using device: {device}")
     print(f"Tokenizer: {tokenizer_name}\n")
 
-    if tokenizer_type == TokenizerTypeEnum.CHAR:
-        tokenizer = load_char_tokenizer(tokenizer_path)
-        vocab_size = tokenizer.get_vocab_size
-    else:
-        tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
-        vocab_size = tokenizer.get_vocab_size()
+    tokenizer, vocab_size = load_tokenizer_with_vocab_size(tokenizer_type, tokenizer_path)
 
     data_cfg = config[SectionEnum.DATA]
 
     data_path = get_data_path(config)
-    texts = read_file_only_reviews(data_path)
+    print(f"Level: {data_cfg[DataConfigEnum.LEVEL]}")
+    match data_cfg[DataConfigEnum.LEVEL]:
+        case 1:
+            texts = read_file_only_reviews(data_path)
+        case 2:
+            texts = read_file_synopsis_review_pairs(data_path)
+        case _:
+            raise ValueError(f"Invalid level input: {data_cfg[DataConfigEnum.LEVEL]}")
     random.seed(data_cfg[DataConfigEnum.SEED])
     random.shuffle(texts)
 
@@ -206,7 +206,7 @@ def main(config: dict):
     )
 
     save_model(model, vocab_size, num_params, config)
-    save_metrics(metrics, num_params)
+    save_metrics(metrics, num_params, data_cfg[DataConfigEnum.LEVEL])
 
     wandb.finish()
 

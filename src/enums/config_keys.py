@@ -40,5 +40,6 @@ class DataConfigEnum(StrEnum):
     TRAIN_SIZE = "train_size"
     VAL_SIZE = "val_size"
     TEST_SIZE = "test_size"
-    SEED = "seed"
     FILE = "file"
+    LEVEL = "level"
+    SEED = "seed"
