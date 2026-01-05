@@ -18,7 +18,14 @@ def train_bpe_tokenizer(texts: list[str], vocab_size: int) -> BPETokenizer:
         verbose=True,
     )
     print(f"Vocabulary size: {tokenizer.get_vocab_size}")
-    print(f"Special tokens: BOS={tokenizer.bos_id}, EOS={tokenizer.eos_id}, PAD={tokenizer.pad_id}")
+    print(
+        f"Special tokens:"
+        f"BOS={tokenizer.bos_id},"
+        f"EOS={tokenizer.eos_id},"
+        f"PAD={tokenizer.pad_id},"
+        f"SYN={tokenizer.syn_id},"
+        f"REV={tokenizer.rev_id}"
+    )
     return tokenizer
 
 
@@ -66,6 +73,8 @@ def verify(tokenizer: BPETokenizer, output_path: Path) -> None:
     assert tokenizer.bos_id == loaded.bos_id
     assert tokenizer.eos_id == loaded.eos_id
     assert tokenizer.pad_id == loaded.pad_id
+    assert tokenizer.syn_id == loaded.syn_id
+    assert tokenizer.rev_id == loaded.rev_id
 
     print("Verification passed!")
 

@@ -116,6 +116,14 @@ class BPETokenizer(BaseTokenizer):
     def pad_id(self) -> int:
         return self._special_tokens[SpecialTokensEnum.PAD]
 
+    @property
+    def syn_id(self) -> int:
+        return self._special_tokens[SpecialTokensEnum.SYN]
+
+    @property
+    def rev_id(self) -> int:
+        return self._special_tokens[SpecialTokensEnum.REV]
+
     def token_to_id(self, token: str | SpecialTokensEnum) -> int | None:
         return self._special_tokens.get(token)
 
