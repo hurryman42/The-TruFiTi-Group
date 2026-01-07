@@ -21,7 +21,7 @@ def test_special_tokens_initialized(tokenizer):
 
 def test_byte_vocabulary_initialized(tokenizer):
     # length special tokens + 256 bytes
-    assert tokenizer.get_vocab_size == BASE_VOCAB_SIZE
+    assert tokenizer.get_vocab_size() == BASE_VOCAB_SIZE
 
 
 def test_encode_with_special_tokens(tokenizer):

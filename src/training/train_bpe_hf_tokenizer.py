@@ -1,5 +1,3 @@
-"""Training script for the BPE tokenizer from Hugging Face."""
-
 import argparse
 from pathlib import Path
 

@@ -100,7 +100,6 @@ class BPETokenizer(BaseTokenizer):
             self._vocabulary[token_id] = byte_val
             self._token_to_id[byte_val] = token_id
 
-    @property
     def get_vocab_size(self) -> int:
         return len(self._vocabulary)
 
@@ -212,7 +211,7 @@ class BPETokenizer(BaseTokenizer):
 
         if verbose:
             total_time = time.time() - start_time
-            print(f"Training complete in {total_time:.1f}s. Final vocab size: {tokenizer.get_vocab_size}")
+            print(f"Training complete in {total_time:.1f}s. Final vocab size: {tokenizer.get_vocab_size()}")
 
         return tokenizer
 

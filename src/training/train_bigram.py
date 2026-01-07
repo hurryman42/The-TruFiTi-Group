@@ -20,7 +20,7 @@ from src.training.trainer import TrainingMetrics, train_loop
 from src.utils.data_loader import read_file_only_reviews
 from src.utils.device import get_device
 from src.utils.encoding import encode_texts
-from src.utils.tokenizer_loader import load_tokenizer_with_vocab_size
+from src.utils.tokenizer_loader import load_tokenizer
 from src.utils.training import train_val_test_split
 
 
@@ -95,7 +95,8 @@ def main(config: dict):
     print(f"Using device: {device}")
     print(f"Tokenizer: {tokenizer_type}\n")
 
-    tokenizer, vocab_size = load_tokenizer_with_vocab_size(tokenizer_type, tokenizer_path)
+    tokenizer = load_tokenizer(tokenizer_type, tokenizer_path)
+    vocab_size = tokenizer.get_vocab_size()
 
     data_path = get_data_path(config)
     texts = read_file_only_reviews(data_path)

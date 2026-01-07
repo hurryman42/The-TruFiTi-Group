@@ -1,12 +1,12 @@
 import json
+from pathlib import Path
+
 import torch
 import wandb
 import random
 import argparse
-from datetime import datetime
 
 from src.config import (
-    MODEL_DIR,
     get_data_path,
     get_model_save_path,
     get_model_type,
@@ -31,7 +31,7 @@ from src.utils import read_file_synopsis_review_pairs
 from src.utils.data_loader import read_file_only_reviews
 from src.utils.device import get_device
 from src.utils.encoding import encode_texts
-from src.utils.tokenizer_loader import load_tokenizer_with_vocab_size
+from src.utils.tokenizer_loader import load_tokenizer
 from src.utils.training import train_val_test_split
 from src.utils.wandb_transfomer_config_override import apply_wandb_overrides
 
@@ -45,7 +45,7 @@ def create_forward_pass():
     return forward_pass
 
 
-def save_model(model, vocab_size: int, num_params: int, config: dict):
+def save_model(model, vocab_size: int, num_params: int, config: dict) -> Path:
     save_path = get_model_save_path(config, num_params)
     save_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -76,10 +76,8 @@ def save_model(model, vocab_size: int, num_params: int, config: dict):
     return save_path
 
 
-def save_metrics(metrics: TrainingMetrics, num_params: int, level: str):
-    params_millions = num_params / 1_000_000
-    time = datetime.now().strftime("%y-%m-%d_%H:%M:%S")
-    metrics_path = MODEL_DIR / f"transformer_L{level}_{params_millions:.1f}M_{time}_metrics.json"
+def save_metrics(metrics: TrainingMetrics, model_save_path: Path):
+    metrics_path = model_save_path.with_name(model_save_path.stem + "_metrics.json")
 
     with open(metrics_path, "w") as f:
         json.dump(
@@ -134,7 +132,8 @@ def main(config: dict):
     print(f"Using device: {device}")
     print(f"Tokenizer: {tokenizer_name}\n")
 
-    tokenizer, vocab_size = load_tokenizer_with_vocab_size(tokenizer_type, tokenizer_path)
+    tokenizer = load_tokenizer(tokenizer_type, tokenizer_path)
+    vocab_size = tokenizer.get_vocab_size()
 
     data_cfg = config[SectionEnum.DATA]
 
@@ -205,8 +204,8 @@ def main(config: dict):
         warmup_iters=training_cfg[TrainingEnum.WARMUP_ITERS],
     )
 
-    save_model(model, vocab_size, num_params, config)
-    save_metrics(metrics, num_params, data_cfg[DataConfigEnum.LEVEL])
+    model_save_path = save_model(model, vocab_size, num_params, config)
+    save_metrics(metrics, model_save_path)
 
     wandb.finish()
 

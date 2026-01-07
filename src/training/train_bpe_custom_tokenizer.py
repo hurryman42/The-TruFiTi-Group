@@ -1,5 +1,3 @@
-"""Training script for the custom BPE tokenizer."""
-
 import argparse
 from pathlib import Path
 
@@ -17,7 +15,7 @@ def train_bpe_tokenizer(texts: list[str], vocab_size: int) -> BPETokenizer:
         target_size=vocab_size,
         verbose=True,
     )
-    print(f"Vocabulary size: {tokenizer.get_vocab_size}")
+    print(f"Vocabulary size: {tokenizer.get_vocab_size()}")
     print(
         f"Special tokens:"
         f"BOS={tokenizer.bos_id},"

@@ -60,11 +60,13 @@ def get_tokenizer_name(config: dict[str, Any]) -> str:
     tokenizer_type = get_tokenizer_type(config)
     level = get_level(config)
     data_file = get_data_name(config)
-    if tokenizer_type == TokenizerTypeEnum.CHAR:
-        return "char_tokenizer.json"
-    elif tokenizer_type == TokenizerTypeEnum.BPE_HUGGING_FACE:
-        return f"bpe_hf_L{level}_{data_file}.json"
-    return f"bpe_custom_L{level}_{data_file}.json"
+    match tokenizer_type:
+        case TokenizerTypeEnum.CHAR:
+            return "char_tokenizer.json"
+        case TokenizerTypeEnum.BPE_HUGGING_FACE:
+            return f"bpe_hf_L{level}_{data_file}.json"
+        case _:
+            return f"bpe_custom_L{level}_{data_file}.json"
 
 
 def get_tokenizer_path(config: dict[str, Any]) -> Path:
@@ -89,6 +91,7 @@ def get_model_save_path(config: dict[str, Any], num_params: int) -> Path:
     model_type = get_model_type(config)
     level = get_level(config)
     params_millions = num_params / 1_000_000
+    time = datetime.now().strftime("%y-%m-%d_%H-%M-%S")
 
     if model_type == ModelTypeEnum.BIGRAM:
         tokenizer_type = get_tokenizer_type(config)
@@ -96,4 +99,4 @@ def get_model_save_path(config: dict[str, Any], num_params: int) -> Path:
             return MODEL_DIR / "bigram_model_bpe_hf.pt"
         return MODEL_DIR / "bigram_model.pt"
 
-    return MODEL_DIR / f"transformer_L{level}_{params_millions:.1f}M_{datetime.now().strftime('%y-%m-%d_%H:%M:%S')}.pt"
+    return MODEL_DIR / f"transformer_L{level}_{params_millions:.1f}M_{time}.pt"

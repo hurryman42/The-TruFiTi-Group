@@ -9,23 +9,6 @@ from src.enums import TokenizerTypeEnum
 type AnyTokenizer = CharTokenizer | HFTokenizer | BPETokenizer
 
 
-def load_tokenizer_with_vocab_size(tokenizer_type, tokenizer_path: Path) -> tuple[AnyTokenizer, int]:
-    tokenizer: AnyTokenizer
-    match tokenizer_type:
-        case TokenizerTypeEnum.CHAR:
-            tokenizer = load_char_tokenizer(tokenizer_path)
-            vocab_size = tokenizer.get_vocab_size
-        case TokenizerTypeEnum.BPE_HUGGING_FACE:
-            tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
-            vocab_size = tokenizer.get_vocab_size()
-        case TokenizerTypeEnum.BPE:
-            tokenizer = load_bpe_custom_tokenizer(tokenizer_path)
-            vocab_size = tokenizer.get_vocab_size
-        case _:
-            raise ValueError(f"Unknown tokenizer type: {tokenizer_type}")
-    return tokenizer, vocab_size
-
-
 def load_tokenizer(tokenizer_type, tokenizer_path: Path) -> AnyTokenizer:
     tokenizer: AnyTokenizer
     match tokenizer_type:
@@ -42,7 +25,7 @@ def load_tokenizer(tokenizer_type, tokenizer_path: Path) -> AnyTokenizer:
 
 def load_char_tokenizer(path: Path) -> CharTokenizer:
     tokenizer = CharTokenizer.load(str(path))
-    print(f"Loaded char tokenizer - vocab size: {tokenizer.get_vocab_size}")
+    print(f"Loaded char tokenizer - vocab size: {tokenizer.get_vocab_size()}")
     return tokenizer
 
 
@@ -54,5 +37,5 @@ def load_bpe_hugging_face_tokenizer(path: Path) -> HFTokenizer:
 
 def load_bpe_custom_tokenizer(path: Path) -> BPETokenizer:
     tokenizer = BPETokenizer.load(str(path))
-    print(f"Loaded custom BPE tokenizer - vocab size: {tokenizer.get_vocab_size}")
+    print(f"Loaded custom BPE tokenizer - vocab size: {tokenizer.get_vocab_size()}")
     return tokenizer
