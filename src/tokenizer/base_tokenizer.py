@@ -24,7 +24,6 @@ class BaseTokenizer(ABC):
     def load(cls, path: str) -> "BaseTokenizer":
         pass
 
-    @property
     @abstractmethod
     def get_vocab_size(self) -> int:
         pass
