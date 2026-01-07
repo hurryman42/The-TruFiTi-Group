@@ -58,6 +58,5 @@ class CharTokenizer(BaseTokenizer):
             tokenizer._token_to_char = {int(k): v for k, v in data["token_to_char"].items()}
         return tokenizer
 
-    @property
     def get_vocab_size(self) -> int:
         return len(self._chars)

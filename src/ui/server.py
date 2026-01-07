@@ -13,12 +13,22 @@ from src.generation.generate_transformer import (
     load_model_tokenizer_from_transformer_checkpoint,
 )
 from src.utils.device import get_device
+from src.enums.types import SpecialTokensEnum
 
 BASE_DIR = Path(__file__).parent.parent.parent
 UI_DIR = Path(__file__).parent  # <-- src/ui/
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, required=True)
+parser.add_argument(
+    "-l",
+    "--level",
+    type=int,
+    choices=[1, 2],
+    required=True,
+    help="LeveL 1 = continue review, 2 = write review to given synopsis",
+)
 args, _ = parser.parse_known_args()
+LEVEL = args.level
 
 MODEL_PATH = Path(args.model)
 if not MODEL_PATH.is_absolute():
@@ -30,6 +40,12 @@ model, tokenizer = load_model_tokenizer_from_transformer_checkpoint(checkpoint, 
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory=UI_DIR), name="static")
+
+
+def extract_review(text: str) -> str:
+    if SpecialTokensEnum.REV in text:
+        return text.split(SpecialTokensEnum.REV, 1)[1].strip()
+    return text.strip()
 
 
 @app.get("/")
@@ -45,7 +61,16 @@ class GenerateRequest(BaseModel):
 
 @app.post("/generate")
 def generate(req: GenerateRequest):
-    review = generate_single(model, tokenizer, device, prompt=req.synopsis, length=200)
+    match LEVEL:
+        case 1:
+            prompt = req.synopsis
+        case 2:
+            prompt = f"{SpecialTokensEnum.SYN} {req.synopsis} {SpecialTokensEnum.REV} "
+        case _:
+            raise ValueError("Invalid level")
+
+    raw_output = generate_single(model, tokenizer, device, prompt=prompt, length=200)
+    review = extract_review(raw_output)  # TODO: does not work as intended, prompt still in output
     return {"review": review}
 
 

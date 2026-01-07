@@ -1,7 +1,6 @@
-import argparse
 import json
-
 import torch
+import argparse
 
 from src.config import MODEL_DIR, get_data_path, get_model_type, get_tokenizer_path, get_tokenizer_type, load_config
 from src.enums import (
@@ -21,7 +20,7 @@ from src.training.trainer import TrainingMetrics, train_loop
 from src.utils.data_loader import read_file_only_reviews
 from src.utils.device import get_device
 from src.utils.encoding import encode_texts
-from src.utils.tokenizer_loader import load_bpe_hugging_face_tokenizer, load_char_tokenizer
+from src.utils.tokenizer_loader import load_tokenizer
 from src.utils.training import train_val_test_split
 
 
@@ -64,10 +63,13 @@ def save_model(model, token_embedding, pos_encoding, vocab_size: int, config: di
 
 
 def save_metrics(metrics: TrainingMetrics, tokenizer_type: TokenizerTypeEnum):
-    if tokenizer_type == TokenizerTypeEnum.BPE_HUGGING_FACE:
-        metrics_path = MODEL_DIR / "bigram_model_bpe_hugging_face_metrics.json"
-    else:
-        metrics_path = MODEL_DIR / "bigram_model_metrics.json"
+    match tokenizer_type:
+        case TokenizerTypeEnum.BPE_HUGGING_FACE:
+            metrics_path = MODEL_DIR / "bigram_model_bpe_hf_metrics.json"
+        case TokenizerTypeEnum.BPE:
+            metrics_path = MODEL_DIR / "bigram_model_bpe_custom_metrics.json"
+        case _:
+            metrics_path = MODEL_DIR / "bigram_model_metrics.json"
 
     with open(metrics_path, "w") as f:
         json.dump(
@@ -93,12 +95,8 @@ def main(config: dict):
     print(f"Using device: {device}")
     print(f"Tokenizer: {tokenizer_type}\n")
 
-    if tokenizer_type == TokenizerTypeEnum.CHAR:
-        tokenizer = load_char_tokenizer(tokenizer_path)
-        vocab_size = tokenizer.get_vocab_size
-    else:
-        tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
-        vocab_size = tokenizer.get_vocab_size()
+    tokenizer = load_tokenizer(tokenizer_type, tokenizer_path)
+    vocab_size = tokenizer.get_vocab_size()
 
     data_path = get_data_path(config)
     texts = read_file_only_reviews(data_path)

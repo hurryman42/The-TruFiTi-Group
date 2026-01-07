@@ -1,8 +1,9 @@
 import json
 import time
-from collections import Counter
-from pathlib import Path
+from tqdm import tqdm
 from typing import Self
+from pathlib import Path
+from collections import Counter
 
 from src.enums.types import SpecialTokensEnum
 from src.tokenizer.base_tokenizer import BaseTokenizer
@@ -99,7 +100,6 @@ class BPETokenizer(BaseTokenizer):
             self._vocabulary[token_id] = byte_val
             self._token_to_id[byte_val] = token_id
 
-    @property
     def get_vocab_size(self) -> int:
         return len(self._vocabulary)
 
@@ -114,6 +114,14 @@ class BPETokenizer(BaseTokenizer):
     @property
     def pad_id(self) -> int:
         return self._special_tokens[SpecialTokensEnum.PAD]
+
+    @property
+    def syn_id(self) -> int:
+        return self._special_tokens[SpecialTokensEnum.SYN]
+
+    @property
+    def rev_id(self) -> int:
+        return self._special_tokens[SpecialTokensEnum.REV]
 
     def token_to_id(self, token: str | SpecialTokensEnum) -> int | None:
         return self._special_tokens.get(token)
@@ -158,7 +166,6 @@ class BPETokenizer(BaseTokenizer):
     def train(cls, texts: list[str], **kwargs) -> Self:
         target_size: int = kwargs.get("target_size", 1000)
         verbose: bool = kwargs.get("verbose", False)
-        log_every: int = kwargs.get("log_every", 100)
 
         tokenizer = cls()
         byte_offset = len(tokenizer._special_tokens)
@@ -182,9 +189,8 @@ class BPETokenizer(BaseTokenizer):
 
         num_merges = target_size - len(tokenizer._vocabulary)
         start_time = time.time()
-        last_log_time = start_time
 
-        for step in range(num_merges):
+        for _step in tqdm(range(num_merges), desc="Training BPE merges"):
             if not pair_counts:
                 break
 
@@ -203,26 +209,9 @@ class BPETokenizer(BaseTokenizer):
 
             del pair_counts[best_pair]
 
-            if verbose and (step + 1) % log_every == 0:
-                now = time.time()
-                elapsed = now - start_time
-                step_time = now - last_log_time
-                steps_remaining = num_merges - (step + 1)
-                eta = (elapsed / (step + 1)) * steps_remaining
-                total_tokens = sum(len(t) for t in encoded_texts)
-
-                print(
-                    f"Step {step + 1:,}/{num_merges:,} "
-                    f"({100 * (step + 1) / num_merges:.1f}%) | "
-                    f"tokens: {total_tokens:,} | "
-                    f"{log_every} steps in {step_time:.1f}s | "
-                    f"ETA: {eta:.0f}s"
-                )
-                last_log_time = now
-
         if verbose:
             total_time = time.time() - start_time
-            print(f"Training complete in {total_time:.1f}s. Final vocab size: {tokenizer.get_vocab_size}")
+            print(f"Training complete in {total_time:.1f}s. Final vocab size: {tokenizer.get_vocab_size()}")
 
         return tokenizer
 

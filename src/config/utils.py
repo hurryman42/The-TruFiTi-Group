@@ -57,16 +57,21 @@ def get_tokenizer_type(config: dict[str, Any]) -> TokenizerTypeEnum:
 
 
 def get_tokenizer_name(config: dict[str, Any]) -> str:
+    tokenizer_type = get_tokenizer_type(config)
+    level = get_level(config)
     data_file = get_data_name(config)
-    return f"bpe_hf_{data_file}.json"
+    match tokenizer_type:
+        case TokenizerTypeEnum.CHAR:
+            return "char_tokenizer.json"
+        case TokenizerTypeEnum.BPE_HUGGING_FACE:
+            return f"bpe_hf_L{level}_{data_file}.json"
+        case _:
+            return f"bpe_custom_L{level}_{data_file}.json"
 
 
 def get_tokenizer_path(config: dict[str, Any]) -> Path:
-    tokenizer_type = get_tokenizer_type(config)
-    data_file = get_data_name(config)
-    if tokenizer_type == TokenizerTypeEnum.CHAR:
-        return TOKENIZER_DIR / "char_tokenizer.json"
-    return TOKENIZER_DIR / f"bpe_hf_{data_file}.json"
+    tokenizer_name = get_tokenizer_name(config)
+    return TOKENIZER_DIR / tokenizer_name
 
 
 def get_data_path(config: dict[str, Any]) -> Path:
@@ -78,14 +83,20 @@ def get_data_name(config: dict[str, Any]) -> str:
     return Path(config[SectionEnum.DATA][DataConfigEnum.FILE]).stem
 
 
+def get_level(config: dict[str, Any]) -> str:
+    return config[SectionEnum.DATA][DataConfigEnum.LEVEL]
+
+
 def get_model_save_path(config: dict[str, Any], num_params: int) -> Path:
     model_type = get_model_type(config)
+    level = get_level(config)
     params_millions = num_params / 1_000_000
+    time = datetime.now().strftime("%y-%m-%d_%H-%M-%S")
 
     if model_type == ModelTypeEnum.BIGRAM:
         tokenizer_type = get_tokenizer_type(config)
         if tokenizer_type == TokenizerTypeEnum.BPE_HUGGING_FACE:
-            return MODEL_DIR / "bigram_model_bpe_hugging_face.pt"
+            return MODEL_DIR / "bigram_model_bpe_hf.pt"
         return MODEL_DIR / "bigram_model.pt"
 
-    return MODEL_DIR / f"transformer_{datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}_{params_millions:.1f}M.pt"
+    return MODEL_DIR / f"transformer_L{level}_{params_millions:.1f}M_{time}.pt"
