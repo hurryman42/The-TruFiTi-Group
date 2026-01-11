@@ -78,7 +78,7 @@ If you see errors about `curl` or `python3` missing, please install them using y
 `uv run -m src.ui.server --model [MODEL] --l [1|2]`
 
 ### Evaluation
-`uv run -m src.evaluation.evaluate_transformer --model [MODEL] --config [CONFIG]`
+`uv run -m src.evaluation.evaluate_transformer --model [MODEL]`
 
 ---
 

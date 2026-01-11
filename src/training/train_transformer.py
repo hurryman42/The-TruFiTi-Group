@@ -1,4 +1,5 @@
 import json
+from dataclasses import asdict
 from pathlib import Path
 
 import torch
@@ -6,25 +7,9 @@ import wandb
 import random
 import argparse
 
-from src.config import (
-    get_data_path,
-    get_model_save_path,
-    get_model_type,
-    get_tokenizer_name,
-    get_tokenizer_path,
-    get_tokenizer_type,
-    load_config,
-    recompute_computed_fields,
-)
-from src.enums import (
-    CheckpointEnum,
-    DataConfigEnum,
-    DataSplitEnum,
-    ModelTypeEnum,
-    SectionEnum,
-    TrainingEnum,
-    TransformerModelEnum,
-)
+from src.config import get_data_path, load_config, get_model_save_path
+from src.dto.config import Config
+from src.enums import DataSplitEnum, ModelTypeEnum, TransformerCheckpointEnum
 from src.models.transformer.transformer import TransformerDecoderOnly
 from src.training.trainer import TrainingMetrics, train_loop
 from src.utils import read_file_synopsis_review_pairs
@@ -45,29 +30,16 @@ def create_forward_pass():
     return forward_pass
 
 
-def save_model(model, vocab_size: int, num_params: int, config: dict) -> Path:
+def save_model(model, vocab_size: int, num_params: int, config: Config, tokenizer) -> Path:
     save_path = get_model_save_path(config, num_params)
     save_path.parent.mkdir(parents=True, exist_ok=True)
 
-    model_cfg = config[SectionEnum.MODEL]
-    tokenizer_type = get_tokenizer_type(config)
-    tokenizer_name = get_tokenizer_name(config)
-
     checkpoint = {
-        CheckpointEnum.MODEL: model.state_dict(),
-        CheckpointEnum.NUM_PARAMS: num_params,
-        CheckpointEnum.VOCAB_SIZE: vocab_size,
-        CheckpointEnum.D_MODEL: model_cfg[TransformerModelEnum.D_MODEL],
-        CheckpointEnum.SEQ_LEN: model_cfg[TransformerModelEnum.SEQ_LEN],
-        CheckpointEnum.NUM_HEADS: model_cfg[TransformerModelEnum.NUM_HEADS],
-        CheckpointEnum.NUM_BLOCKS: model_cfg[TransformerModelEnum.NUM_BLOCKS],
-        CheckpointEnum.FF_HIDDEN_DIM: model_cfg[TransformerModelEnum.FF_HIDDEN_DIM],
-        CheckpointEnum.DROPOUT: model_cfg[TransformerModelEnum.DROPOUT],
-        CheckpointEnum.TOKENIZER_TYPE: str(tokenizer_type),
-        CheckpointEnum.TOKENIZER_NAME: str(tokenizer_name),
-        CheckpointEnum.DATA_SEED: config[SectionEnum.DATA][DataConfigEnum.SEED],
-        CheckpointEnum.USE_ROPE: model_cfg[TransformerModelEnum.USE_ROPE],
-        CheckpointEnum.DATA_FILE: config[SectionEnum.DATA][DataConfigEnum.FILE],
+        TransformerCheckpointEnum.MODEL: model.state_dict(),
+        TransformerCheckpointEnum.VOCAB_SIZE: vocab_size,
+        TransformerCheckpointEnum.NUM_PARAMS: num_params,
+        TransformerCheckpointEnum.CONFIG: asdict(config),
+        TransformerCheckpointEnum.TOKENIZER: tokenizer,
     }
 
     torch.save({str(k): v for k, v in checkpoint.items()}, save_path)
@@ -95,13 +67,10 @@ def save_metrics(metrics: TrainingMetrics, model_save_path: Path):
     print(f"Metrics saved to {metrics_path}")
 
 
-def print_training_statistics(config: dict, train_data_len: int):
-    model_cfg = config[SectionEnum.MODEL]
-    training_cfg = config[SectionEnum.TRAINING]
-
-    batch_size = training_cfg[TrainingEnum.BATCH_SIZE]
-    seq_len = model_cfg[TransformerModelEnum.SEQ_LEN]
-    max_iters = training_cfg[TrainingEnum.MAX_ITERS]
+def print_training_statistics(config: Config, train_data_len: int):
+    batch_size = config.training.batch_size
+    seq_len = config.model.seq_len
+    max_iters = config.training.max_iters
 
     tokens_per_iter = batch_size * seq_len
     iters_per_epoch = train_data_len // tokens_per_iter
@@ -111,79 +80,73 @@ def print_training_statistics(config: dict, train_data_len: int):
     print(f"Total epochs: {max_iters / iters_per_epoch:.2f}\n")
 
 
-def main(config: dict):
+def main(config: Config):
     wandb.init(
         project="film-critic-lm",
         entity="the-trufiti-group",
-        config=config,
+        config=asdict(config),
     )
 
     if wandb.config.get("config"):
-        config = load_config(wandb.config.config)
+        config = Config.from_yaml(wandb.config.config)
         config = apply_wandb_overrides(config)
-        recompute_computed_fields(config)
-        wandb.config.update(config, allow_val_change=True)
+        wandb.config.update(asdict(config), allow_val_change=True)
 
     device = get_device()
-    tokenizer_type = get_tokenizer_type(config)
-    tokenizer_name = get_tokenizer_name(config)
-    tokenizer_path = get_tokenizer_path(config)
 
     print(f"Using device: {device}")
-    print(f"Tokenizer: {tokenizer_name}\n")
+    print(f"Tokenizer: {config.tokenizer.name}\n")
 
-    tokenizer = load_tokenizer(tokenizer_type, tokenizer_path)
+    tokenizer = load_tokenizer(config.tokenizer)
     vocab_size = tokenizer.get_vocab_size()
 
-    data_cfg = config[SectionEnum.DATA]
+    data_path = get_data_path(config.data.file)
 
-    data_path = get_data_path(config)
-    print(f"Level: {data_cfg[DataConfigEnum.LEVEL]}")
-    match data_cfg[DataConfigEnum.LEVEL]:
+    print(f"Level: {config.data.level}")
+    match config.data.level:
         case 1:
             texts = read_file_only_reviews(data_path)
         case 2:
             texts = read_file_synopsis_review_pairs(data_path)
         case _:
-            raise ValueError(f"Invalid level input: {data_cfg[DataConfigEnum.LEVEL]}")
-    random.seed(data_cfg[DataConfigEnum.SEED])
+            raise ValueError(f"Invalid level input: {config.data.level}")
+
+    random.seed(config.data.seed)
     random.shuffle(texts)
 
     train_texts, val_texts, _ = train_val_test_split(
         texts,
-        data_cfg[DataConfigEnum.TRAIN_SIZE],
-        data_cfg[DataConfigEnum.VAL_SIZE],
-        data_cfg[DataConfigEnum.TEST_SIZE],
+        config.data.train_size,
+        config.data.val_size,
+        config.data.test_size,
     )
 
-    train_data = torch.tensor(encode_texts(train_texts, tokenizer, tokenizer_type), dtype=torch.long)
-    val_data = torch.tensor(encode_texts(val_texts, tokenizer, tokenizer_type), dtype=torch.long)
+    train_data = torch.tensor(encode_texts(train_texts, tokenizer, config.tokenizer.type), dtype=torch.long)
+    val_data = torch.tensor(encode_texts(val_texts, tokenizer, config.tokenizer.type), dtype=torch.long)
 
     print(f"Total tokens: {len(train_data) + len(val_data):,}".replace(",", "."))
 
     print_training_statistics(config, len(train_data))
 
-    model_cfg = config[SectionEnum.MODEL]
     model = TransformerDecoderOnly(
         vocab_size,
-        embedding_dimension=model_cfg[TransformerModelEnum.D_MODEL],
-        num_blocks=model_cfg[TransformerModelEnum.NUM_BLOCKS],
-        num_heads=model_cfg[TransformerModelEnum.NUM_HEADS],
-        head_dimension=model_cfg[TransformerModelEnum.HEAD_DIM],
-        max_seq_len=model_cfg[TransformerModelEnum.SEQ_LEN],
-        ff_hidden_dimension=model_cfg[TransformerModelEnum.FF_HIDDEN_DIM],
-        dropout=model_cfg[TransformerModelEnum.DROPOUT],
-        use_rope=model_cfg[TransformerModelEnum.USE_ROPE],
+        embedding_dimension=config.model.d_model,
+        num_blocks=config.model.num_blocks,
+        num_heads=config.model.num_heads,
+        head_dimension=config.model.head_dim,
+        max_seq_len=config.model.seq_len,
+        ff_hidden_dimension=config.model.ff_hidden_dim,
+        dropout=config.model.dropout,
+        use_rope=config.model.use_rope,
     ).to(device)
 
     num_params = sum(p.numel() for p in model.parameters())
     print(f"Model parameters: {num_params:,} ({num_params / 1_000_000:.1f}M)\n".replace(",", "."))
 
-    training_cfg = config[SectionEnum.TRAINING]
     optimizer = torch.optim.AdamW(
         model.parameters(),
-        lr=float(training_cfg[TrainingEnum.LEARNING_RATE]),
-        weight_decay=training_cfg[TrainingEnum.WEIGHT_DECAY],
+        lr=config.training.learning_rate,
+        weight_decay=config.training.weight_decay,
     )
 
     forward_pass = create_forward_pass()
@@ -194,17 +157,17 @@ def main(config: dict):
         forward_pass,
         data,
         optimizer,
-        model_cfg[TransformerModelEnum.SEQ_LEN],
-        training_cfg[TrainingEnum.BATCH_SIZE],
-        training_cfg[TrainingEnum.MAX_ITERS],
-        training_cfg[TrainingEnum.EVAL_INTERVAL],
-        training_cfg[TrainingEnum.EVAL_ITERS],
+        config.model.seq_len,
+        config.training.batch_size,
+        config.training.max_iters,
+        config.training.eval_interval,
+        config.training.eval_iters,
         device,
         wandb,
-        warmup_iters=training_cfg[TrainingEnum.WARMUP_ITERS],
+        warmup_iters=config.training.warmup_iters,
     )
 
-    model_save_path = save_model(model, vocab_size, num_params, config)
+    model_save_path = save_model(model, vocab_size, num_params, config, tokenizer)
     save_metrics(metrics, model_save_path)
 
     wandb.finish()
@@ -216,11 +179,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # TODO change config dict to a DTO
     config = load_config(args.config)
     print(f"Loading config: {args.config}\n")
 
-    if get_model_type(config) != ModelTypeEnum.TRANSFORMER:
+    if config.model.type != ModelTypeEnum.TRANSFORMER:
         raise ValueError(f"Config '{args.config}' is not a transformer config")
 
     main(config)

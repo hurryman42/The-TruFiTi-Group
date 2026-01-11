@@ -2,12 +2,12 @@ import torch
 import argparse
 from pathlib import Path
 
-from src.enums import CheckpointEnum, TokenizerTypeEnum
+from src.dto.config import Config
+from src.enums import BigramCheckpointEnum, TokenizerTypeEnum
 from src.models.bigram_language_model import BigramLanguageModel
 from src.models.embeddings.positional_encoding import PositionalEncoding
 from src.models.embeddings.token_embedding import TokenEmbedding
 from src.utils.device import get_device
-from src.utils.tokenizer_loader import load_tokenizer
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -18,34 +18,24 @@ def load_model(model_path: Path):
 
     checkpoint = torch.load(model_path, map_location=device)
 
-    tokenizer_type = TokenizerTypeEnum(checkpoint[CheckpointEnum.TOKENIZER_TYPE])
-    tokenizer_name = checkpoint[CheckpointEnum.TOKENIZER_NAME]
-    tokenizer_path = BASE_DIR / "tokenizer" / tokenizer_name
+    config = Config.from_dict(checkpoint[BigramCheckpointEnum.CONFIG])
+    tokenizer = checkpoint[BigramCheckpointEnum.TOKENIZER]
+    vocab_size = checkpoint[BigramCheckpointEnum.VOCAB_SIZE]
 
-    print(f"Tokenizer: {tokenizer_type}")
-    print(
-        f"Vocab size: {checkpoint[CheckpointEnum.VOCAB_SIZE]}, "
-        f"d_model: {checkpoint[CheckpointEnum.D_MODEL]}, "
-        f"seq_len: {checkpoint[CheckpointEnum.SEQ_LEN]}\n"
-    )
+    print(f"Tokenizer: {config.tokenizer.type}")
+    print(f"Vocab size: {vocab_size}, d_model: {config.model.d_model}, seq_len: {config.model.seq_len}\n")
 
-    tokenizer = load_tokenizer(tokenizer_type, tokenizer_path)
+    token_embedding = TokenEmbedding(vocab_size, config.model.d_model, scale=False).to(device)
+    pos_encoding = PositionalEncoding(config.model.d_model, max_seq_len=config.model.seq_len).to(device)
+    model = BigramLanguageModel(vocab_size, config.model.d_model).to(device)
 
-    token_embedding = TokenEmbedding(
-        checkpoint[CheckpointEnum.VOCAB_SIZE], checkpoint[CheckpointEnum.D_MODEL], scale=False
-    ).to(device)
-    pos_encoding = PositionalEncoding(
-        checkpoint[CheckpointEnum.D_MODEL], max_seq_len=checkpoint[CheckpointEnum.SEQ_LEN]
-    ).to(device)
-    model = BigramLanguageModel(checkpoint[CheckpointEnum.VOCAB_SIZE], checkpoint[CheckpointEnum.D_MODEL]).to(device)
-
-    token_embedding.load_state_dict(checkpoint[CheckpointEnum.TOKEN_EMBEDDING])
-    pos_encoding.load_state_dict(checkpoint[CheckpointEnum.POS_ENCODING])
-    model.load_state_dict(checkpoint[CheckpointEnum.MODEL])
+    token_embedding.load_state_dict(checkpoint[BigramCheckpointEnum.TOKEN_EMBEDDING])
+    pos_encoding.load_state_dict(checkpoint[BigramCheckpointEnum.POS_ENCODING])
+    model.load_state_dict(checkpoint[BigramCheckpointEnum.MODEL])
 
     model.eval()
 
-    return model, token_embedding, pos_encoding, tokenizer, tokenizer_type, checkpoint[CheckpointEnum.SEQ_LEN], device
+    return model, token_embedding, pos_encoding, tokenizer, config, device
 
 
 def generate(
@@ -53,14 +43,13 @@ def generate(
     token_embedding,
     pos_encoding,
     tokenizer,
-    tokenizer_type,
-    seq_len,
+    config: Config,
     device,
     prompt: str = "",
     length: int = 200,
 ) -> str:
     if prompt:
-        if tokenizer_type == TokenizerTypeEnum.CHAR:
+        if config.tokenizer.type == TokenizerTypeEnum.CHAR:
             idx = torch.tensor(tokenizer.encode(prompt), dtype=torch.long, device=device).unsqueeze(0)
         else:
             encoded = tokenizer.encode(prompt)
@@ -68,10 +57,8 @@ def generate(
     else:
         idx = torch.zeros((1, 1), dtype=torch.long, device=device)
 
-    result = model.generate(token_embedding, pos_encoding, idx, length, max_context_len=seq_len)
+    result = model.generate(token_embedding, pos_encoding, idx, length, max_context_len=config.model.seq_len)
 
-    if tokenizer_type == TokenizerTypeEnum.CHAR:
-        return tokenizer.decode(result[0].tolist())
     return tokenizer.decode(result[0].tolist())
 
 
@@ -84,13 +71,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     model_path = BASE_DIR / "models" / args.model
-    model, token_embedding, pos_encoding, tokenizer, tokenizer_type, seq_len, device = load_model(model_path)
+    model, token_embedding, pos_encoding, tokenizer, config, device = load_model(model_path)
 
     print("=" * 80)
     print(f"Prompt: '{args.prompt}'" if args.prompt else "Unconditional generation:")
     print("=" * 80)
-    print(
-        generate(
-            model, token_embedding, pos_encoding, tokenizer, tokenizer_type, seq_len, device, args.prompt, args.length
-        )
-    )
+    print(generate(model, token_embedding, pos_encoding, tokenizer, config, device, args.prompt, args.length))

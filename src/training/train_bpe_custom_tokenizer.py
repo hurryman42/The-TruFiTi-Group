@@ -4,7 +4,6 @@ from pathlib import Path
 from src.tokenizer.bpe_tokenizer import BPETokenizer
 from src.utils.data_loader import read_file_only_reviews, read_file_synopsis_review_pairs
 
-# TODO choose tokenizer size in config file
 VOCAB_SIZE = 2000
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 

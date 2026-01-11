@@ -2,8 +2,7 @@ import argparse
 import random
 from pathlib import Path
 
-from src.config import get_data_path, load_config
-from src.enums import DataConfigEnum, SectionEnum
+from src.config import get_data_path
 from src.evaluation.bert_score import BERTScoreMetric
 from src.evaluation.distinct_n_metric import DistinctNMetric
 from src.evaluation.perplexity import PerplexityMetric
@@ -11,7 +10,7 @@ from src.evaluation.rouge_n_metric import RougeNMetric
 from src.generation.generate_transformer import generate_batch, generate_completions_batch
 from src.utils import get_device, train_val_test_split
 from src.utils.data_loader import read_file_only_reviews
-from src.utils.load_transformer import load_checkpoint, load_model_tokenizer_from_transformer_checkpoint
+from src.utils.load_transformer import load_transformer_from_checkpoint
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -66,49 +65,44 @@ def evaluate(
     print(f"Distinct-1:  {d1_result.score:.4f}")
     print(f"Distinct-2:  {d2_result.score:.4f}")
     print(f"BERTScore:   {bert_result.score:.4f}")
-    print(f"ROUGE-1:     {rouge1_result.score:.4f}")  # NEU
-    print(f"ROUGE-2:     {rouge2_result.score:.4f}")  # NEU
+    print(f"ROUGE-1:     {rouge1_result.score:.4f}")
+    print(f"ROUGE-2:     {rouge2_result.score:.4f}")
 
     return {
         "perplexity": ppl_result.score,
         "distinct_1": d1_result.score,
         "distinct_2": d2_result.score,
         "bertscore_f1": bert_result.score,
-        "rouge1_f1": rouge1_result.score,  # NEU
-        "rouge2_f1": rouge2_result.score,  # NEU
+        "rouge1_f1": rouge1_result.score,
+        "rouge2_f1": rouge2_result.score,
     }
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate Transformer Language Model")
     parser.add_argument("--model", type=str, required=True, help="Model filename")
-    parser.add_argument("--config", type=str, required=True, help="Config name")
     parser.add_argument("--num_samples", type=int, default=100)
     parser.add_argument("--gen_length", type=int, default=50)
     parser.add_argument("--seed", type=int, default=42)
 
     args = parser.parse_args()
 
-    config = load_config(args.config)
-    data_cfg = config[SectionEnum.DATA]
-
     device = get_device()
     print(f"Device: {device}")
 
     model_path = BASE_DIR / "models" / args.model
-    checkpoint = load_checkpoint(model_path, device)
-    model, tokenizer = load_model_tokenizer_from_transformer_checkpoint(checkpoint, device)
+    model, tokenizer, config = load_transformer_from_checkpoint(model_path, device)
 
-    data_path = get_data_path(config)
-    texts = read_file_only_reviews(data_path)
-    random.seed(data_cfg[DataConfigEnum.SEED])
+    # TODO(@hurryman42) muss hier das noch für Level 2 geändert/ hinzugfügt werden?
+    texts = read_file_only_reviews(get_data_path(config.data.file))
+    random.seed(config.data.seed)
     random.shuffle(texts)
 
     _, _, test_texts = train_val_test_split(
         texts,
-        data_cfg[DataConfigEnum.TRAIN_SIZE],
-        data_cfg[DataConfigEnum.VAL_SIZE],
-        data_cfg[DataConfigEnum.TEST_SIZE],
+        config.data.test_size,
+        config.data.val_size,
+        config.data.train_size,
     )
 
     assert test_texts is not None, "Test split configuration resulted in None."

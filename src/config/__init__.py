@@ -6,12 +6,9 @@ from src.config.utils import (
     TOKENIZER_DIR,
     get_data_path,
     get_model_save_path,
-    get_model_type,
-    get_tokenizer_name,
     get_tokenizer_path,
-    get_tokenizer_type,
     load_config,
-    recompute_computed_fields,
+    get_tokenizer_dir,
 )
 
 __all__ = [
@@ -22,10 +19,7 @@ __all__ = [
     "TOKENIZER_DIR",
     "get_data_path",
     "get_model_save_path",
-    "get_model_type",
-    "get_tokenizer_type",
-    "get_tokenizer_name",
     "get_tokenizer_path",
     "load_config",
-    "recompute_computed_fields",
+    "get_tokenizer_dir",
 ]

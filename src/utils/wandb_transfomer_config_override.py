@@ -1,21 +1,20 @@
 import wandb
-from src.enums import SectionEnum, TrainingEnum, TransformerModelEnum
 
-WANDB_TO_CONFIG_MAPPING = {
-    "training.learning_rate": (SectionEnum.TRAINING, TrainingEnum.LEARNING_RATE),
-    "training.batch_size": (SectionEnum.TRAINING, TrainingEnum.BATCH_SIZE),
-    "training.weight_decay": (SectionEnum.TRAINING, TrainingEnum.WEIGHT_DECAY),
-    "training.warmup_iters": (SectionEnum.TRAINING, TrainingEnum.WARMUP_ITERS),
-    "model.dropout": (SectionEnum.MODEL, TransformerModelEnum.DROPOUT),
-    "model.d_model": (SectionEnum.MODEL, TransformerModelEnum.D_MODEL),
-    "model.num_blocks": (SectionEnum.MODEL, TransformerModelEnum.NUM_BLOCKS),
-    "model.num_heads": (SectionEnum.MODEL, TransformerModelEnum.NUM_HEADS),
-    "model.seq_len": (SectionEnum.MODEL, TransformerModelEnum.SEQ_LEN),
-}
+from src.dto.config import Config
 
 
-def apply_wandb_overrides(config: dict) -> dict:
-    for wandb_key, (section, key) in WANDB_TO_CONFIG_MAPPING.items():
-        if wandb_key in wandb.config:
-            config[section][key] = wandb.config[wandb_key]
+def apply_wandb_overrides(config: Config) -> Config:
+    for key in wandb.config.keys():
+        if "." not in key:
+            continue
+
+        section, field_name = key.split(".", 1)
+
+        if hasattr(config, section):
+            section_config = getattr(config, section)
+            if hasattr(section_config, field_name):
+                setattr(section_config, field_name, wandb.config[key])
+
+    config.model.__post_init__()
+
     return config
