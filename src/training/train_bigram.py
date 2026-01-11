@@ -1,18 +1,12 @@
 import json
+from dataclasses import asdict
+
 import torch
 import argparse
 
-from src.config import MODEL_DIR, get_data_path, get_model_type, get_tokenizer_path, get_tokenizer_type, load_config
-from src.enums import (
-    BigramModelEnum,
-    CheckpointEnum,
-    DataConfigEnum,
-    DataSplitEnum,
-    ModelTypeEnum,
-    SectionEnum,
-    TokenizerTypeEnum,
-    TrainingEnum,
-)
+from src.config import MODEL_DIR, get_data_path
+from src.dto.config import Config
+from src.enums import BigramCheckpointEnum, DataSplitEnum, ModelTypeEnum, TokenizerTypeEnum
 from src.models.bigram_language_model import BigramLanguageModel
 from src.models.embeddings.positional_encoding import PositionalEncoding
 from src.models.embeddings.token_embedding import TokenEmbedding
@@ -34,29 +28,24 @@ def create_forward_pass(token_embedding, pos_encoding):
     return forward_pass
 
 
-def save_model(model, token_embedding, pos_encoding, vocab_size: int, config: dict):
-    tokenizer_type = get_tokenizer_type(config)
-
-    if tokenizer_type == TokenizerTypeEnum.BPE_HUGGING_FACE:
+def save_model(model, token_embedding, pos_encoding, vocab_size: int, config: Config, tokenizer):
+    if config.tokenizer.type == TokenizerTypeEnum.BPE_HUGGING_FACE:
         save_path = MODEL_DIR / "bigram_model_bpe_hugging_face.pt"
     else:
         save_path = MODEL_DIR / "bigram_model.pt"
 
     save_path.parent.mkdir(parents=True, exist_ok=True)
 
-    model_cfg = config[SectionEnum.MODEL]
-
     checkpoint = {
-        CheckpointEnum.MODEL: model.state_dict(),
-        CheckpointEnum.TOKEN_EMBEDDING: token_embedding.state_dict(),
-        CheckpointEnum.POS_ENCODING: pos_encoding.state_dict(),
-        CheckpointEnum.VOCAB_SIZE: vocab_size,
-        CheckpointEnum.D_MODEL: model_cfg[BigramModelEnum.D_MODEL],
-        CheckpointEnum.SEQ_LEN: model_cfg[BigramModelEnum.SEQ_LEN],
-        CheckpointEnum.TOKENIZER_TYPE: str(tokenizer_type),
+        BigramCheckpointEnum.MODEL: model.state_dict(),
+        BigramCheckpointEnum.TOKEN_EMBEDDING: token_embedding.state_dict(),
+        BigramCheckpointEnum.POS_ENCODING: pos_encoding.state_dict(),
+        BigramCheckpointEnum.VOCAB_SIZE: vocab_size,
+        BigramCheckpointEnum.CONFIG: asdict(config),
+        BigramCheckpointEnum.TOKENIZER: tokenizer,
     }
 
-    torch.save({str(k): v for k, v in checkpoint.items()}, save_path)
+    torch.save(checkpoint, save_path)
     print(f"Model saved to {save_path}")
 
     return save_path
@@ -87,48 +76,39 @@ def save_metrics(metrics: TrainingMetrics, tokenizer_type: TokenizerTypeEnum):
     print(f"Metrics saved to {metrics_path}")
 
 
-def main(config: dict):
+def main(config: Config):
     device = get_device()
-    tokenizer_type = get_tokenizer_type(config)
-    tokenizer_path = get_tokenizer_path(config)
 
     print(f"Using device: {device}")
-    print(f"Tokenizer: {tokenizer_type}\n")
+    print(f"Tokenizer: {config.tokenizer.type}\n")
 
-    tokenizer = load_tokenizer(tokenizer_type, tokenizer_path)
+    tokenizer = load_tokenizer(config.tokenizer)
     vocab_size = tokenizer.get_vocab_size()
 
-    data_path = get_data_path(config)
-    texts = read_file_only_reviews(data_path)
-    encoded = encode_texts(texts, tokenizer, tokenizer_type)
+    texts = read_file_only_reviews(get_data_path(config.data.file))
+    encoded = encode_texts(texts, tokenizer, config.tokenizer.type)
     print(f"Total tokens: {len(encoded):,}".replace(",", "."))
 
-    data_cfg = config[SectionEnum.DATA]
     train_texts, val_texts, _ = train_val_test_split(
         texts,
-        data_cfg[DataConfigEnum.TRAIN_SIZE],
-        data_cfg[DataConfigEnum.VAL_SIZE],
-        data_cfg[DataConfigEnum.TEST_SIZE],
+        config.data.train_size,
+        config.data.val_size,
+        config.data.test_size,
     )
 
-    train_data = torch.tensor(encode_texts(train_texts, tokenizer, tokenizer_type), dtype=torch.long)
-    val_data = torch.tensor(encode_texts(val_texts, tokenizer, tokenizer_type), dtype=torch.long)
+    train_data = torch.tensor(encode_texts(train_texts, tokenizer, config.tokenizer.type), dtype=torch.long)
+    val_data = torch.tensor(encode_texts(val_texts, tokenizer, config.tokenizer.type), dtype=torch.long)
 
-    model_cfg = config[SectionEnum.MODEL]
-    d_model = model_cfg[BigramModelEnum.D_MODEL]
-    seq_len = model_cfg[BigramModelEnum.SEQ_LEN]
-
-    token_embedding = TokenEmbedding(vocab_size, d_model, scale=False).to(device)
-    pos_encoding = PositionalEncoding(d_model, max_seq_len=seq_len).to(device)
-    model = BigramLanguageModel(vocab_size, d_model).to(device)
+    token_embedding = TokenEmbedding(vocab_size, config.model.d_model, scale=False).to(device)
+    pos_encoding = PositionalEncoding(config.model.d_model, max_seq_len=config.model.seq_len).to(device)
+    model = BigramLanguageModel(vocab_size, config.model.d_model).to(device)
 
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Model parameters: {total_params:,}\n".replace(",", "."))
 
-    training_cfg = config[SectionEnum.TRAINING]
     optimizer = torch.optim.AdamW(
         list(model.parameters()) + list(token_embedding.parameters()),
-        lr=training_cfg[TrainingEnum.LEARNING_RATE],
+        lr=config.training.learning_rate,
     )
 
     forward_pass = create_forward_pass(token_embedding, pos_encoding)
@@ -139,16 +119,16 @@ def main(config: dict):
         forward_pass,
         data,
         optimizer,
-        seq_len,
-        training_cfg[TrainingEnum.BATCH_SIZE],
-        training_cfg[TrainingEnum.MAX_ITERS],
-        training_cfg[TrainingEnum.EVAL_INTERVAL],
-        training_cfg[TrainingEnum.EVAL_ITERS],
+        config.model.seq_len,
+        config.training.batch_size,
+        config.training.max_iters,
+        config.training.eval_interval,
+        config.training.eval_iters,
         device,
     )
 
-    save_model(model, token_embedding, pos_encoding, vocab_size, config)
-    save_metrics(metrics, tokenizer_type)
+    save_model(model, token_embedding, pos_encoding, vocab_size, config, tokenizer)
+    save_metrics(metrics, config.tokenizer.type)
 
 
 if __name__ == "__main__":
@@ -157,10 +137,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    config = load_config(args.config)
+    config = Config.from_yaml(args.config)
     print(f"Loading config: {args.config}\n")
 
-    if get_model_type(config) != ModelTypeEnum.BIGRAM:
+    if config.model.type != ModelTypeEnum.BIGRAM:
         raise ValueError(f"Config '{args.config}' is not a bigram config")
 
     main(config)
