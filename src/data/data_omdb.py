@@ -13,7 +13,7 @@ OMDB_KEY = os.environ.get("OMDB_API_KEY")  # export OMDB_API_KEY=xxx
 CACHE_FILE = "data/plot_cache.json"
 plot_cache = {}  # in‑memory cache { (title_lower, year): plot }
 
-REQUEST_LIMIT = 90000
+REQUEST_LIMIT = 90  # TODO: change 90000 when paid key, ALSO: delete cache from free key (contains only short plots)
 omdb_requests_made = 0
 
 
@@ -122,7 +122,7 @@ def extract_omdb_fields(omdb_data):
     return out
 
 
-def get_plot_per_film(data):
+def get_plot_per_film(data, debug):
     title = data.get("title")
     year = data.get("year")
     synopsis = data.get("synopsis")
@@ -154,10 +154,12 @@ def get_plot_per_film(data):
     omdb_meta = extract_omdb_fields(omdb)
 
     if omdb_plot:
-        print(f"--- Plot from OMDb:\n{omdb_plot}\n")
+        if debug:
+            print(f"--- Plot from OMDb:\n{omdb_plot}\n")
         if synopsis:
             if omdb_plot.endswith("...") or synopsis.lower().startswith(omdb_plot.lower()):
-                print("--- OMDb has the same as dataset or is truncated! ---\n")
+                if debug:
+                    print("--- OMDb has the same as dataset or is truncated! ---\n")
                 plot_cache[key] = (synopsis, omdb_meta)
                 return synopsis, omdb_meta
 
@@ -181,7 +183,7 @@ def main():
     total = 0
 
     with open(input_file, encoding="utf-8") as infile, open(output_file, "a", encoding="utf-8") as outfile:
-        for _index, line in tqdm(enumerate(infile, 1)):
+        for _index, line in tqdm(enumerate(infile, 1), desc="Processing films"):
             if omdb_requests_made >= REQUEST_LIMIT:
                 print(f"Daily OMDb limit reached ({REQUEST_LIMIT}). Stopping early.")
                 break
@@ -198,7 +200,7 @@ def main():
             if key in processed_keys:
                 continue
 
-            plot, meta = get_plot_per_film(data)
+            plot, meta = get_plot_per_film(data, False)
 
             if plot:
                 data["plot"] = plot
@@ -220,11 +222,18 @@ def main():
     print("Cache size:", len(plot_cache))
 
 
-def test_random_entries(n=5, input_file="data/letterboxd_full.jsonl"):
+def test_random_films(n=5, input_file="data/letterboxd_full.jsonl"):
     load_cache()
 
+    lines = []
     with open(input_file, encoding="utf-8") as f:
-        lines = f.readlines()
+        for i, line in enumerate(f):
+            if i < n:
+                lines.append(line)
+            else:
+                j = random.randint(0, i)
+                if j < n:
+                    lines[j] = line
 
     sample = random.sample(lines, min(n, len(lines)))
 
@@ -242,7 +251,7 @@ def test_random_entries(n=5, input_file="data/letterboxd_full.jsonl"):
         print(synopsis if synopsis else "(None)")
         print("\n")
 
-        plot, meta = get_plot_per_film(data)
+        plot, meta = get_plot_per_film(data, True)
 
         if plot:
             print(f"--- Final plot:\n{plot}\n")
@@ -256,4 +265,4 @@ def test_random_entries(n=5, input_file="data/letterboxd_full.jsonl"):
 
 if __name__ == "__main__":
     # main()
-    test_random_entries(5)
+    test_random_films(5)

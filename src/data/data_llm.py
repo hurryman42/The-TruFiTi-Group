@@ -1,3 +1,6 @@
+import json
+import random
+from tqdm import tqdm
 from openai import OpenAI
 
 LM_CLIENT = OpenAI(
@@ -6,59 +9,146 @@ LM_CLIENT = OpenAI(
 )
 
 
-def improve_synopsis_with_llm(omdb_plot, orig_synopsis, title, year):
-    prompt = f"""
-Rewrite the synopsis of the following film in clean, factual English.
-Rules:
-- About 5 sentences long
-- No hallucinations
-- Use the OMDb plot as the factual base
-- Preserve meaning
-- If the OMDb plot is good as-is, expand it to about 5 sentences.
+def parse_numbered_results(text, n):
+    results = {}
+    lines = text.strip().split("\n")
 
-Film: {title} ({year})
-OMDb Plot: {omdb_plot}
-Original Synopsis: {orig_synopsis}
+    for line in lines:
+        if ":" not in line:
+            continue
+        num, content = line.split(":", 1)
+        num = num.strip()
+        content = content.strip()
 
-Rewrite now.
-"""
-    res = LM_CLIENT.chat.completions.create(
+        if num.isdigit():
+            results[int(num)] = content
+
+    return [results.get(i, "DISCARD") for i in range(1, n + 1)]
+
+
+def improve_reviews_batch(title, year, reviews):
+    prompt = (
+        f"Edit the following user reviews for the film {title} ({year})."
+        "Correct spelling, spacing, grammar, and punctuation.\n"
+        "Capitalize the first letter of every sentence.\n"
+        "You may add missing sentence subjects such as “This film”, “The movie”, “It”, or “I” only to turn fragments "
+        "into complete sentences."
+        "Do NOT add any other new ideas or information.\n"
+        "Preserve meaning, tone, humor, and sentiment.\n"
+        "Remove emojis and non‑Latin symbols.\n"
+        "If a review is meaningless or unusable → respond DISCARD.\n"
+        "If already clean → respond SKIP.\n\n"
+        "Return answers only as:\n"
+        "1: text\n"
+        "2: text\n"
+        "3: text\n\n"
+        "Reviews:\n"
+    )
+    for i, r in enumerate(reviews, 1):
+        prompt += f"{i}: {r}\n"
+
+    response = LM_CLIENT.chat.completions.create(
         model="local-model",
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.2,
+        temperature=0,
+        max_tokens=2000,
     )
-    return res.choices[0].message["content"].strip()
+
+    raw = response.choices[0].message.content.strip()
+    parsed = parse_numbered_results(raw, len(reviews))
+
+    cleaned = []
+    for original, result in zip(reviews, parsed, strict=True):
+        match result:
+            case "SKIP":
+                cleaned.append(original)
+            case "DISCARD":
+                cleaned.append(None)
+            case _:
+                cleaned.append(result.strip())
+    return cleaned
 
 
-def improve_review(review_text):
-    prompt = f"""
-You are a review normalizer.
-Rewrite the following user review in clean, grammatically correct English.
+def improve_reviews_per_film(data):
+    title = data.get("title")
+    year = data.get("year")
+    reviews = data.get("review_texts", [])
 
-Rules:
-- Preserve meaning, tone, humor and sentiment  
-- Do NOT add new content  
-- Remove emojis and non-Latin symbols  
-- Keep similar length  
+    if not reviews:
+        return data
 
-Original review:
-{review_text}
-
-Rewrite it now.
-"""
-    res = LM_CLIENT.chat.completions.create(
-        model="local-model",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.1,
-    )
-    return res.choices[0].message["content"].strip()
-
-
-def process_entry(entry):
-    improved_reviews = [improve_review(r) for r in entry["review_texts"]]
+    improved_reviews = improve_reviews_batch(title, year, reviews)
+    improved_reviews = [r for r in improved_reviews if r is not None]
 
     return {
-        "title": entry["title"],
-        "year": entry["year"],
+        "title": data.get("title"),
+        "year": data.get("year"),
+        "synopsis": data.get("synopsis"),
         "review_texts": improved_reviews,
     }
+
+
+def main():
+    film_counter = 0
+
+    input_path = "data/letterboxd_filtered_0.99.jsonl"
+    output_path = "data/letterboxd_filtered_llm.jsonl"
+
+    with open(input_path, encoding="utf-8") as infile, open(output_path, "w", encoding="utf-8") as outfile:
+        for line in tqdm(infile, desc="Processing films"):
+            if film_counter >= 100:
+                break
+            try:
+                data = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+
+            film_counter += 1
+
+            result = improve_reviews_per_film(data)
+            outfile.write(json.dumps(result, ensure_ascii=False) + "\n")
+
+    print("Finished processing dataset. Saved to:", output_path)
+
+
+def test_random_films(n=3, input_file="data/letterboxd_filtered.jsonl"):
+    lines = []
+    with open(input_file, encoding="utf-8") as f:
+        for i, line in enumerate(f):
+            if i < n:
+                lines.append(line)
+            else:
+                j = random.randint(0, i)
+                if j < n:
+                    lines[j] = line
+
+    print("Testing on", n, "random films:\n")
+
+    for raw in lines:
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError as e:
+            print(f"Invalid JSON when testing, skipping. {e}")
+            continue
+
+        title = data.get("title")
+        year = data.get("year")
+        reviews = data.get("review_texts")
+
+        print(f"{title} ({year})")
+        print("--- Original Reviews ---")
+        for r in reviews:
+            print("-", r)
+
+        print("\n--- Improved Reviews ---")
+        improved_reviews = improve_reviews_batch(title, year, reviews)
+        improved_reviews = [r for r in improved_reviews if r is not None]
+        for r in improved_reviews:
+            print("-", r)
+
+        print("\n" + "=" * 40 + "\n")
+
+
+if __name__ == "__main__":
+    main()
+    # test_random_films(2)
