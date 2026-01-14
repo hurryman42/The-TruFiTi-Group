@@ -2,6 +2,7 @@ import mauve
 
 from src.evaluation.base_evaluation_metric import BaseEvaluationMetric, MetricResult
 
+
 class MauveMetric(BaseEvaluationMetric):
     def __init__(self):
         pass

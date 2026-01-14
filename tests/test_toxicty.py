@@ -1,8 +1,8 @@
 from src.evaluation.toxicity import Toxicity
 
+
 def test_meteor_metric():
-    predictions = ["This was a terrible fucking movie, I hated it.",
-                   "Such a good film, it was awesome."]
+    predictions = ["This was a terrible fucking movie, I hated it.", "Such a good film, it was awesome."]
     toxicity_original = Toxicity("original")
     toxicity_unbiased = Toxicity("unbiased")
 

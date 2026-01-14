@@ -50,5 +50,7 @@ Score 5: The model flawlessly identifies the emotional context of the user's inp
 
 input_ids = tokenizer(input_text, return_tensors="pt").input_ids.to("cuda")
 
-outputs = model.generate(input_ids, sample=True, temperature=1.0, top_p=0.9, max_new_tokens=256, repetition_penalty=1.03)
+outputs = model.generate(
+    input_ids, sample=True, temperature=1.0, top_p=0.9, max_new_tokens=256, repetition_penalty=1.03
+)
 print(tokenizer.decode(outputs[0]))

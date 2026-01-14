@@ -2,6 +2,7 @@ from evaluate import load
 
 from src.evaluation.base_evaluation_metric import BaseEvaluationMetric, MetricResult
 
+
 class MeteorMetric(BaseEvaluationMetric):
     def __init__(self):
         self._metric = load("meteor")
