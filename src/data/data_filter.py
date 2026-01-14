@@ -10,6 +10,7 @@ from lingua import Language, LanguageDetectorBuilder
 from src.data.data_adjustment import ReviewAdjuster
 
 DEFAULT_MIN_REVIEW_WORDS = 15
+DEFAULT_MAX_REVIEW_WORDS = 85
 DEFAULT_MAX_EMOJIS = 5
 DEFAULT_MAX_WEIRD_CHARS = 10
 DEFAULT_MAX_REPETITION = 15
@@ -106,6 +107,9 @@ def is_valid_review(
     if len(text_lower.split()) < DEFAULT_MIN_REVIEW_WORDS:
         return False
 
+    if len(text_lower.split()) > DEFAULT_MAX_REVIEW_WORDS:
+        return False
+
     if BAD_PATTERNS.search(text_lower):
         return False
 
@@ -122,6 +126,9 @@ def is_valid_review(
         return False
 
     if not is_english(text, detector):
+        return False
+
+    if not review_adjuster.is_spelling_adequate(text, 0.95):
         return False
 
     # if not review_adjuster.is_grammar_adequate(text):
@@ -156,8 +163,8 @@ def filter_per_film(
     if not filtered_reviews:
         return None
 
-    if min_synopsis_words > 0 and not has_sufficient_synopsis(data.get("synopsis"), min_synopsis_words):
-        return None
+    # if min_synopsis_words > 0 and not has_sufficient_synopsis(data.get("synopsis"), min_synopsis_words):
+    #    return None
 
     return {
         "title": data.get("title"),

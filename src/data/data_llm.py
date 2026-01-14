@@ -1,5 +1,6 @@
 import json
 import random
+import openai
 from tqdm import tqdm
 from openai import OpenAI
 
@@ -27,32 +28,38 @@ def parse_numbered_results(text, n):
 
 
 def improve_reviews_batch(title, year, reviews):
-    prompt = (
-        f"Edit the following user reviews for the film {title} ({year})."
-        "Correct spelling, spacing, grammar, and punctuation.\n"
-        "Capitalize the first letter of every sentence.\n"
-        "You may add missing sentence subjects such as “This film”, “The movie”, “It”, or “I” only to turn fragments "
-        "into complete sentences."
-        "Do NOT add any other new ideas or information.\n"
-        "Preserve meaning, tone, humor, and sentiment.\n"
-        "Remove emojis and non‑Latin symbols.\n"
-        "If a review is meaningless or unusable → respond DISCARD.\n"
-        "If already clean → respond SKIP.\n\n"
-        "Return answers only as:\n"
-        "1: text\n"
-        "2: text\n"
-        "3: text\n\n"
-        "Reviews:\n"
-    )
+    prompt = f"""
+        Edit the following user reviews for the film {title} ({year}).
+        - Correct spelling, spacing, grammar, and punctuation.
+        - Capitalize the first letter of every sentence.
+        - You may add missing sentence subjects such as “This film”, “The movie”, “It”, or “I” to turn fragments or
+        incomplete sentences into complete sentences.
+        - Your perspective is that of a user rating a film.
+        - Preserve meaning, tone, humor, and sentiment.
+        - Remove emojis and non‑Latin symbols.
+        - If a review is meaningless or unusable → respond DISCARD
+        - If already clean → respond SKIP
+        
+        Return answers only as:
+        1: text
+        2: text
+        3: text
+        
+        Reviews:
+        """
     for i, r in enumerate(reviews, 1):
         prompt += f"{i}: {r}\n"
 
-    response = LM_CLIENT.chat.completions.create(
-        model="local-model",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0,
-        max_tokens=2000,
-    )
+    try:
+        response = LM_CLIENT.chat.completions.create(
+            model="local-model",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0,
+            max_tokens=2000,
+        )
+    except openai.APIConnectionError as e:
+        print(e)
+        return []
 
     raw = response.choices[0].message.content.strip()
     parsed = parse_numbered_results(raw, len(reviews))
@@ -88,10 +95,9 @@ def improve_reviews_per_film(data):
     }
 
 
-def main():
+def main(input_path="data/letterboxd_filtered.jsonl"):
     film_counter = 0
 
-    input_path = "data/letterboxd_filtered_0.99.jsonl"
     output_path = "data/letterboxd_filtered_llm.jsonl"
 
     with open(input_path, encoding="utf-8") as infile, open(output_path, "w", encoding="utf-8") as outfile:
@@ -111,9 +117,9 @@ def main():
     print("Finished processing dataset. Saved to:", output_path)
 
 
-def test_random_films(n=3, input_file="data/letterboxd_filtered.jsonl"):
+def test_random_films(n=3, input_path="data/letterboxd_filtered.jsonl"):
     lines = []
-    with open(input_file, encoding="utf-8") as f:
+    with open(input_path, encoding="utf-8") as f:
         for i, line in enumerate(f):
             if i < n:
                 lines.append(line)
@@ -138,17 +144,17 @@ def test_random_films(n=3, input_file="data/letterboxd_filtered.jsonl"):
         print(f"{title} ({year})")
         print("--- Original Reviews ---")
         for r in reviews:
-            print("-", r)
+            print("\n-", r)
 
         print("\n--- Improved Reviews ---")
         improved_reviews = improve_reviews_batch(title, year, reviews)
         improved_reviews = [r for r in improved_reviews if r is not None]
         for r in improved_reviews:
-            print("-", r)
+            print("\n-", r)
 
         print("\n" + "=" * 40 + "\n")
 
 
 if __name__ == "__main__":
-    main()
-    # test_random_films(2)
+    # main()
+    test_random_films(1)
