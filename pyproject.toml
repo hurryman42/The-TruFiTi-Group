@@ -14,8 +14,8 @@ dependencies = [
     "pandas (>=2.3.3,<3.0.0)",
     "scikit-learn (>=1.7.2,<2.0.0)",
     "pytest (>=8.4.2,<9.0.0)",
-    "torch (>=2.9.0,<3.0.0)",
-    "torchvision (>=0.24.0,<0.25.0)",
+    "torch>=2.9.0,<3.0.0",
+    "torchvision>=0.24.0,<0.25.0",
     "notebook (>=7.4.7,<8.0.0)",
     "tokenizers (>=0.22.1,<0.23.0)",
     "pyyaml>=6.0.0,<7.0.0",
@@ -33,6 +33,9 @@ dependencies = [
     "uvicorn>=0.38.0",
     "pyspellchecker>=0.8.4",
     "language-tool-python>=3.2.0",
+    "mauve-text>=0.4.0",
+    "hf-xet>=1.2.0",
+    "detoxify>=0.5.2",
 ]
 
 [dependency-groups]
