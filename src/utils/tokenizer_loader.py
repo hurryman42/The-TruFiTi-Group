@@ -3,7 +3,7 @@ from pathlib import Path
 from tokenizers import Tokenizer as HFTokenizer
 
 from src.config import get_tokenizer_path
-from src.dto.config import TokenizerConfig
+from src.config.config import TokenizerConfig
 from src.tokenizer.bpe_tokenizer import BPETokenizer
 from src.tokenizer.char_tokenizer import CharTokenizer
 

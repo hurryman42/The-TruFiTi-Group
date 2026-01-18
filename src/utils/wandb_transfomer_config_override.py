@@ -1,6 +1,6 @@
 import wandb
 
-from src.dto.config import Config
+from src.config.config import Config
 
 
 def apply_wandb_overrides(config: Config) -> Config:

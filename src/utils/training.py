@@ -29,7 +29,7 @@ def get_batch(
     data: torch.Tensor,
     seq_len: int,
     batch_size: int,
-    device: str,
+    device: torch.device,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     ix = torch.randint(len(data) - seq_len - 1, (batch_size,))
     # ix = torch.tensor([i + seq_len + 1 for i in range(batch_size)], dtype=torch.long, device=device)

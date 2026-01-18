@@ -29,21 +29,24 @@ class BigramLanguageModel(nn.Module):
 
         return logits, loss
 
+    @torch.no_grad()
     def generate(
         self,
         token_embedding,
-        pos_encoding,
         idx: torch.Tensor,
+        eos_token_id: int,
         max_new_tokens: int,
         max_context_len: int,
     ) -> torch.Tensor:
+        batch_size = idx.size(0)
+        is_generating = torch.ones(batch_size, dtype=torch.bool, device=idx.device)
+
         for _ in range(max_new_tokens):
             idx_context = idx[:, -max_context_len:]
-            tok_emb = token_embedding(idx_context)
-            embeddings = pos_encoding(tok_emb)
+            embedding = token_embedding(idx_context)
 
             # [batch_size, current_seq_len, dim_embedding] -> [batch_size, current_seq_len, vocab_size]
-            logits, _ = self(embeddings)
+            logits, _ = self(embedding)
 
             # Focus only on last position (what comes next)
             # [batch_size, current_seq_len, vocab_size] -> [batch_size, vocab_size]
@@ -58,6 +61,10 @@ class BigramLanguageModel(nn.Module):
 
             # [batch_size, current_seq_len] + [batch_size, 1] -> [batch_size, current_seq_len + 1]
             idx = torch.cat((idx, idx_next), dim=1)
+            is_generating = is_generating & (idx_next.squeeze(-1) != eos_token_id)
 
-            # [batch_size, original_seq_len + max_new_tokens]
+            if not is_generating.any():
+                break
+
+        # [batch_size, original_seq_len + max_new_tokens]
         return idx

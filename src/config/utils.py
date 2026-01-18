@@ -1,8 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from src.dto.config import Config
-from src.enums import ModelTypeEnum, TokenizerTypeEnum
+from src.config.config import Config
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 CONFIG_DIR = Path(__file__).resolve().parent
@@ -42,9 +41,4 @@ def get_model_save_path(config: Config, num_params: int) -> Path:
     params_millions = num_params / 1_000_000
     time = datetime.now().strftime("%y-%m-%d_%H-%M-%S")
 
-    if config.model.type == ModelTypeEnum.BIGRAM:
-        if config.tokenizer.type == TokenizerTypeEnum.BPE_HUGGING_FACE:
-            return MODEL_DIR / "bigram_model_bpe_hf.pt"
-        return MODEL_DIR / "bigram_model.pt"
-
-    return MODEL_DIR / f"transformer_L{config.data.level}_{params_millions:.1f}M_{time}.pt"
+    return MODEL_DIR / f"{config.model.type}_L{config.data.level}_{params_millions:.1f}M_{time}.pt"

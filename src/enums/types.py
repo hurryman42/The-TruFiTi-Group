@@ -4,6 +4,7 @@ from enum import StrEnum
 class ModelTypeEnum(StrEnum):
     BIGRAM = "bigram"
     TRANSFORMER = "transformer"
+    GRU = "gru"
 
 
 class TokenizerTypeEnum(StrEnum):

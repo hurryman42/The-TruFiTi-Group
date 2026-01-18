@@ -1,10 +1,10 @@
 import torch
 
 
-def get_device() -> str:
+def get_device() -> torch.device:
     if torch.cuda.is_available():
-        return "cuda"
+        return torch.device("cuda")
     elif torch.backends.mps.is_available():
-        return "mps"
+        return torch.device("mps")
     else:
-        return "cpu"
+        return torch.device("cpu")
