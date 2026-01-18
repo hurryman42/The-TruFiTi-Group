@@ -16,3 +16,11 @@ class BigramCheckpointEnum(StrEnum):
     VOCAB_SIZE = "vocab_size"
     CONFIG = "config"
     TOKENIZER = "tokenizer"
+
+
+class GruCheckpointEnum(StrEnum):
+    MODEL = "model"
+    VOCAB_SIZE = "vocab_size"
+    NUM_PARAMS = "num_params"
+    CONFIG = "config"
+    TOKENIZER = "tokenizer"

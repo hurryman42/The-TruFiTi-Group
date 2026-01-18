@@ -5,7 +5,7 @@ model:
   num_blocks: 4
   seq_len: 128
   dropout: 0.1
-  use_rope: False
+  use_rope: True
 
 tokenizer:
   type: bpe_hugging_face
@@ -14,15 +14,16 @@ training:
   batch_size: 32
   learning_rate: 3e-4
   weight_decay: 0.0
-  max_iters: 500
+  max_iters: 300
   eval_interval: 250
   eval_iters: 20
   warmup_iters: 0
+  ff_hidden_dim: 128
 
 data:
   train_size: 0.8
   val_size: 0.1
   test_size: 0.1
-  file: letterboxd_filtered.jsonl
+  file: letterboxd_filtered_enhanced_grammar+spelling.jsonl
   level: 2
   seed: 42

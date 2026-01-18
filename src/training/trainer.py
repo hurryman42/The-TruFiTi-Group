@@ -38,7 +38,7 @@ def estimate_loss(
     seq_len: int,
     batch_size: int,
     eval_iters: int,
-    device: str,
+    device: torch.device,
 ) -> dict[DataSplitEnum, float]:
     model.eval()
 
@@ -98,7 +98,7 @@ def train_loop(
     max_iters: int,
     eval_interval: int,
     eval_iters: int,
-    device: str,
+    device: torch.device,
     wandb_run=None,
     patience: int = 5,
     min_delta: float = 1e-3,

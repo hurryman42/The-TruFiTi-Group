@@ -1,6 +1,6 @@
 model:
   type: bigram
-  d_model: 256
+  d_model: 128
   seq_len: 128
 
 tokenizer:
@@ -9,12 +9,14 @@ tokenizer:
 training:
   batch_size: 64
   learning_rate: 0.001
-  max_iters: 3000
-  eval_interval: 1000
+  max_iters: 1000
+  eval_interval: 200
   eval_iters: 50
 
 data:
-  train_size: 0.9
+  train_size: 0.8
   val_size: 0.1
-  file: letterboxd_filtered_short_synopsis_film.jsonl
-
+  test_size: 0.1
+  file: letterboxd_filtered_enhanced_grammar+spelling.jsonl
+  level: 2
+  seed: 42
