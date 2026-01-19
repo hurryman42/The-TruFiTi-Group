@@ -34,6 +34,8 @@ dependencies = [
     "pyspellchecker>=0.8.4",
     "language-tool-python>=3.2.0",
     "openai>=2.14.0",
+    "scipy-stubs==1.17.0.1",
+    "emoji>=2.15.0",
 ]
 
 [dependency-groups]
