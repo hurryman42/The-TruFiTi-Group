@@ -10,7 +10,6 @@ from tokenizers.trainers import BpeTrainer
 from src.enums.types import SpecialTokensEnum
 from src.utils.data_loader import read_file_only_reviews, read_file_synopsis_review_pairs
 
-# TODO choose tokenizer size in config file
 VOCAB_SIZE = 4000
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 

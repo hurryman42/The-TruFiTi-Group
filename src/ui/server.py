@@ -9,8 +9,7 @@ from pydantic import BaseModel
 
 from src.generation.generate_transformer import (
     generate_single,
-    load_checkpoint,
-    load_model_tokenizer_from_transformer_checkpoint,
+    load_transformer_from_checkpoint,
 )
 from src.utils.device import get_device
 from src.enums.types import SpecialTokensEnum
@@ -35,8 +34,7 @@ if not MODEL_PATH.is_absolute():
     MODEL_PATH = BASE_DIR / "models" / MODEL_PATH
 
 device = get_device()
-checkpoint = load_checkpoint(MODEL_PATH, device)
-model, tokenizer = load_model_tokenizer_from_transformer_checkpoint(checkpoint, device)
+model, tokenizer, _ = load_transformer_from_checkpoint(MODEL_PATH, device)
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory=UI_DIR), name="static")

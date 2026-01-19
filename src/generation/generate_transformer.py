@@ -7,7 +7,7 @@ from tokenizers import Tokenizer
 from src.enums.types import SpecialTokensEnum
 from src.models.transformer.transformer import TransformerDecoderOnly
 from src.utils.device import get_device
-from src.utils.load_transformer import load_checkpoint, load_model_tokenizer_from_transformer_checkpoint
+from src.utils.load_transformer import load_transformer_from_checkpoint
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -107,8 +107,7 @@ if __name__ == "__main__":
 
     model_path = BASE_DIR / "models" / args.model
 
-    checkpoint = load_checkpoint(model_path, device)
-    model, tokenizer = load_model_tokenizer_from_transformer_checkpoint(checkpoint, device)
+    model, tokenizer, config = load_transformer_from_checkpoint(model_path, device)
 
     print("=" * 80)
     if args.prompt:
