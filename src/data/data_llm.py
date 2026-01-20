@@ -20,6 +20,7 @@ Your task:
 - Fix grammar, spelling, punctuation, and capitalization.
 - Improve clarity while preserving meaning, tone, and intent.
 - Rewrite sentences only when needed to make them natural English.
+- Treat each review independently; do not copy formatting or style from one review to another.
 - If a review is already clean, output SKIP.
 - If a review contains no understandable English, output DISCARD.
 - Output exactly one line per review in the format:
@@ -449,7 +450,7 @@ def test_single_batch(input_file="data/letterboxd_filtered_post.jsonl", batch_si
 
 
 if __name__ == "__main__":
-    main(input_file="data/splits/part_1.jsonl", output_file="data/letterboxd_filtered_llm_part_1.jsonl")
+    main(input_file="data/splits/part_2.jsonl", output_file="data/tomerge/letterboxd_filtered_llm_part_2.jsonl")
     # test_random_films()
     # improve_reviews_batched("data/splits/part_1.jsonl", "data/letterboxd_filtered_llm_part_1.jsonl", 20)
     # test_single_batch()
