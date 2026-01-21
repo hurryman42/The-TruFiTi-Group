@@ -6,7 +6,7 @@ from tokenizers import Tokenizer
 from src.config.config import Config, BigramModelConfig, TransformerModelConfig, GRUModelConfig
 from src.enums import TransformerCheckpointEnum, BigramCheckpointEnum, GruCheckpointEnum
 from src.enums.types import SpecialTokensEnum, ModelTypeEnum
-from src.models.bigram.bigram_language_model import BigramLanguageModel
+from src.models.bigram.bigram import Bigram
 from src.models.embeddings.token_embedding import TokenEmbedding
 from src.models.gru.gru import GRULanguageModel
 from src.models.transformer.transformer import TransformerDecoderOnly
@@ -96,13 +96,10 @@ def load_model_checkpoint(checkpoint_path: Path, device: torch.device, model_typ
             vocab_size = checkpoint[BigramCheckpointEnum.VOCAB_SIZE]
 
             print(f"Tokenizer: {config.tokenizer.type}")
-            print(
-                f"Vocab size: {vocab_size}, d_model: {bigram_model_config.d_model},"
-                f"seq_len: {bigram_model_config.seq_len}\n"
-            )
+            print(f"Vocab size: {vocab_size}, d_model: {bigram_model_config.d_model}")
 
             token_embedding = TokenEmbedding(vocab_size, bigram_model_config.d_model, scale=False).to(device)
-            bigram = BigramLanguageModel(vocab_size, bigram_model_config.d_model).to(device)
+            bigram = Bigram(vocab_size, bigram_model_config.d_model).to(device)
 
             token_embedding.load_state_dict(checkpoint[BigramCheckpointEnum.TOKEN_EMBEDDING])
             bigram.load_state_dict(checkpoint[BigramCheckpointEnum.MODEL])

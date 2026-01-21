@@ -53,7 +53,7 @@ def main(config: Config):
     tokenizer, vocab_size, train_data, val_data = load_and_prepare_data(config)
 
     print(f"Total tokens: {len(train_data) + len(val_data):,}".replace(",", "."))
-    print_training_statistics(config, train_data.numel())
+    print_training_statistics(train_config.batch_size, model_config.seq_len, train_config.max_iters, train_data.numel())
 
     model = TransformerDecoderOnly(
         vocab_size,

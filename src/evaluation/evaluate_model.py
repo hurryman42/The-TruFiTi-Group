@@ -33,16 +33,13 @@ def evaluate(
     gen_length: int = 50,
     seed: int = 42,
     token_embedding=None,
-    config=None,
 ) -> dict:
     perplexity_metric = PerplexityMetric(model, tokenizer, device, seq_len, token_embedding)
     ppl_result = perplexity_metric.compute(test_texts)
 
     random.seed(seed)
     unconditional_prompts = [""] * num_samples
-    generated_texts = generate(
-        model, tokenizer, device, unconditional_prompts, gen_length, model_type, token_embedding, config
-    )
+    generated_texts = generate(model, tokenizer, device, unconditional_prompts, gen_length, model_type, token_embedding)
 
     d1_result = DistinctNMetric(n=1).compute(generated_texts)
     d2_result = DistinctNMetric(n=2).compute(generated_texts)
@@ -56,9 +53,7 @@ def evaluate(
             prompts.append(prompt)
             references.append(reference)
 
-    completions = generate_completions(
-        model, tokenizer, device, prompts, gen_length, model_type, token_embedding, config
-    )
+    completions = generate_completions(model, tokenizer, device, prompts, gen_length, model_type, token_embedding)
     references_formatted = [[ref] for ref in references]
 
     bert_result = BERTScoreMetric().compute(completions, references_formatted)
@@ -149,5 +144,4 @@ if __name__ == "__main__":
         gen_length=args.gen_length,
         seed=args.seed,
         token_embedding=token_embedding,
-        config=config,
     )

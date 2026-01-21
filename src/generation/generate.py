@@ -25,7 +25,6 @@ def generate(
     length: int,
     model_type: ModelTypeEnum,
     token_embedding=None,
-    config=None,
 ) -> list[str]:
     if not prompts:
         return []
@@ -35,7 +34,7 @@ def generate(
 
     match model_type:
         case ModelTypeEnum.BIGRAM:
-            generated = model.generate(token_embedding, idx, eos_id, length, max_context_len=config.model.seq_len)
+            generated = model.generate(token_embedding, idx, eos_id, length)
         case ModelTypeEnum.GRU | ModelTypeEnum.TRANSFORMER:
             generated = model.generate(idx, length, eos_id)
         case _:
@@ -52,9 +51,8 @@ def generate_completions(
     length: int,
     model_type: ModelTypeEnum,
     token_embedding=None,
-    config=None,
 ) -> list[str]:
-    full_texts = generate(model, tokenizer, device, prompts, length, model_type, token_embedding, config)
+    full_texts = generate(model, tokenizer, device, prompts, length, model_type, token_embedding)
     return extract_completions(full_texts, prompts)
 
 
@@ -79,7 +77,7 @@ if __name__ == "__main__":
     }
     model_type = model_type_map[args.type]
 
-    # Load model (returns different things based on type)
+    # returns different things based on the model type
     model_data = load_model_checkpoint(model_path, device, model_type)
 
     print_generation_header(args.prompt)
@@ -89,7 +87,7 @@ if __name__ == "__main__":
     match model_type:
         case ModelTypeEnum.BIGRAM:
             model, token_embedding, tokenizer, config = model_data
-            results = generate(model, tokenizer, device, prompts, args.length, model_type, token_embedding, config)
+            results = generate(model, tokenizer, device, prompts, args.length, model_type, token_embedding)
         case ModelTypeEnum.GRU | ModelTypeEnum.TRANSFORMER:
             model, tokenizer, config = model_data
             results = generate(model, tokenizer, device, prompts, args.length, model_type)

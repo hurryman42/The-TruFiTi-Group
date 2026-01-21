@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class BigramLanguageModel(nn.Module):
+class Bigram(nn.Module):
     def __init__(self, vocab_size: int, dim_embedding: int):
         super().__init__()
         self.embedding_to_vocab = nn.Linear(dim_embedding, vocab_size)
@@ -36,14 +36,12 @@ class BigramLanguageModel(nn.Module):
         idx: torch.Tensor,
         eos_token_id: int,
         max_new_tokens: int,
-        max_context_len: int,
     ) -> torch.Tensor:
         batch_size = idx.size(0)
         is_generating = torch.ones(batch_size, dtype=torch.bool, device=idx.device)
 
         for _ in range(max_new_tokens):
-            idx_context = idx[:, -max_context_len:]
-            embedding = token_embedding(idx_context)
+            embedding = token_embedding(idx[:, -1:])
 
             # [batch_size, current_seq_len, dim_embedding] -> [batch_size, current_seq_len, vocab_size]
             logits, _ = self(embedding)

@@ -4,7 +4,7 @@ import torch
 from src.config import load_config
 from src.config.config import Config, BigramModelConfig, BigramTrainingConfig
 from src.enums import BigramCheckpointEnum, ModelTypeEnum, DataSplitEnum
-from src.models.bigram.bigram_language_model import BigramLanguageModel
+from src.models.bigram.bigram import Bigram
 from src.models.embeddings.token_embedding import TokenEmbedding
 from src.utils.device import get_device
 from src.training.trainer import train_loop
@@ -40,12 +40,14 @@ def main(config: Config):
     tokenizer, vocab_size, train_data, val_data = load_and_prepare_data(config)
 
     token_embedding = TokenEmbedding(vocab_size, model_config.d_model, scale=False).to(device)
-    model = BigramLanguageModel(vocab_size, model_config.d_model).to(device)
+    model = Bigram(vocab_size, model_config.d_model).to(device)
 
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Model parameters: {total_params:,}\n".replace(",", "."))
 
-    print_training_statistics(config, train_data.numel())
+    print_training_statistics(
+        config.training.batch_size, config.training.seq_len, config.training.max_iters, train_data.numel()
+    )
 
     optimizer = torch.optim.AdamW(
         list(model.parameters()) + list(token_embedding.parameters()),
@@ -59,7 +61,7 @@ def main(config: Config):
         forward_pass,
         data,
         optimizer,
-        model_config.seq_len,
+        train_config.seq_len,
         train_config.batch_size,
         train_config.max_iters,
         train_config.eval_interval,

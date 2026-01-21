@@ -14,7 +14,6 @@ from src.enums import ModelTypeEnum, TokenizerTypeEnum
 @dataclass
 class BaseModelConfig(ABC):
     type: ModelTypeEnum
-    seq_len: int
 
     @classmethod
     @abstractmethod
@@ -31,7 +30,6 @@ class BigramModelConfig(BaseModelConfig):
         return cls(
             type=ModelTypeEnum(raw["type"]),
             d_model=raw["d_model"],
-            seq_len=raw["seq_len"],
         )
 
     def __post_init__(self):
@@ -40,6 +38,7 @@ class BigramModelConfig(BaseModelConfig):
 
 @dataclass
 class GRUModelConfig(BaseModelConfig):
+    seq_len: int
     input_size: int
     hidden_size: int
     num_layers: int
@@ -63,6 +62,7 @@ class GRUModelConfig(BaseModelConfig):
 @dataclass
 class TransformerModelConfig(BaseModelConfig):
     d_model: int
+    seq_len: int
     num_heads: int
     num_blocks: int
     dropout: float
@@ -128,10 +128,13 @@ class BaseTrainingConfig(ABC):
 
 @dataclass
 class BigramTrainingConfig(BaseTrainingConfig):
+    seq_len: int
+
     @classmethod
     def from_dict(cls, raw: dict) -> Self:
         return cls(
             batch_size=raw["batch_size"],
+            seq_len=raw["seq_len"],
             learning_rate=float(raw["learning_rate"]),
             max_iters=raw["max_iters"],
             eval_interval=raw["eval_interval"],

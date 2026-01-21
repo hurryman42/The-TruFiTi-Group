@@ -69,7 +69,7 @@ def generate(req: GenerateRequest):
             raise ValueError("Invalid level")
 
     generated_texts = generate_model(
-        model, tokenizer, device, prompts=[prompt], length=200, model_type=ModelTypeEnum.TRANSFORMER, config=config
+        model, tokenizer, device, prompts=[prompt], length=200, model_type=ModelTypeEnum.TRANSFORMER
     )
     raw_output = generated_texts[0]
     review = extract_review(raw_output)  # TODO: does not work as intended, prompt still in output
