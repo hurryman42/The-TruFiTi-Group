@@ -97,42 +97,5 @@ def main(input_path="data/letterboxd_filtered_omdb.jsonl", output_path="data/let
     print(f"Saved to {output_file}")
 
 
-def split_jsonl(input_path, n, output_dir):
-    os.makedirs(output_dir, exist_ok=True)
-
-    with open(input_path, encoding="utf-8") as infile:
-        lines = infile.readlines()
-
-    total = len(lines)
-    part_size = (total + n - 1) // n
-
-    paths = []
-    for i in range(n):
-        start = i * part_size
-        end = min(start + part_size, total)
-        part_lines = lines[start:end]
-
-        out_path = os.path.join(output_dir, f"part_{i + 1}.jsonl")
-        with open(out_path, "w", encoding="utf-8") as outfile:
-            outfile.writelines(part_lines)
-
-        paths.append(out_path)
-
-    print(f"Split complete: {n} parts created in {output_dir}")
-    return paths
-
-
-def merge_jsonl(input_paths, output_path):
-    with open(output_path, "w", encoding="utf-8") as outfile:
-        for p in input_paths:
-            with open(p, encoding="utf-8") as infile:
-                for line in infile:
-                    outfile.write(line)
-
-    print(f"Merged {len(input_paths)} files into {output_path}")
-
-
 if __name__ == "__main__":
     main()
-    # split_jsonl("data/letterboxd_filtered_post.jsonl", 4, "data/splits")
-    # merge_jsonl(["data/splits/part_1.jsonl", "data/splits/part_2.jsonl"], "data/merged.jsonl")

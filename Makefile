@@ -56,6 +56,18 @@ llm:
 	@echo "\033[0;32mLLM improvement completed successfully.\033[0m"
 
 
+split:
+	@echo "Splitting dataset into multiple files..."
+	@uv run -m src.data.data_utils --split
+	@echo "\033[0;32mSuccessfully merged.\033[0m"
+
+
+merge:
+	@echo "Merging splits into a single file..."
+	@uv run -m src.data.data_utils --merge
+	@echo "\033[0;32mSuccessfully merged.\033[0m"
+
+
 clean:
 	@echo "Removing downloaded dataset..."
 	@rm -f $(DATA_FILE)

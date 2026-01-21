@@ -6,7 +6,7 @@ import random
 import requests
 from tqdm import tqdm
 
-from src.data.data_helper import normalize_title, make_key, load_processed_keys, load_unprocessed_keys
+from src.data.data_utils import normalize_title, make_key, load_processed_keys, load_unprocessed_keys
 
 OMDB_KEY = os.environ.get("OMDB_API_KEY")  # export OMDB_API_KEY=xxx
 
@@ -53,22 +53,6 @@ def fix_invalid_json_escapes(text):
     return re.sub(r'\\(?!["\\/bfnrtu])', r"\\\\", text)
 
 
-def fetch_url(url, params=None, retries=3, delay=0.5):
-    session = getattr(fetch_url, "_session", None)
-    if session is None:
-        session = requests.Session()
-        fetch_url._session = session
-
-    for _ in range(retries):
-        try:
-            r = session.get(url, params=params, timeout=10)
-            if r.status_code == 200:
-                return r
-        except requests.exceptions.RequestException:
-            time.sleep(delay)
-    return None
-
-
 def extract_omdb_fields(omdb_data):
     if not omdb_data:
         return {}
@@ -84,8 +68,24 @@ def extract_omdb_fields(omdb_data):
     return out
 
 
+def fetch_url(url, params=None, retries=3, delay=0.5):
+    session = getattr(fetch_url, "_session", None)
+    if session is None:
+        session = requests.Session()
+        fetch_url._session = session
+
+    for _ in range(retries):
+        try:
+            r = session.get(url, params=params, timeout=10)
+            return r
+        except requests.exceptions.RequestException as e:
+            print(f"[REQUEST ERROR]: {e}")
+            time.sleep(delay)
+    return None
+
+
 def fetch_omdb_info(title, year):
-    global omdb_requests_made
+    global omdb_requests_made, REQUEST_LIMIT
     if omdb_requests_made >= REQUEST_LIMIT:
         return None
 
@@ -101,22 +101,36 @@ def fetch_omdb_info(title, year):
 
     r = fetch_url("http://www.omdbapi.com/", params)
     omdb_requests_made += 1
-    if not r:
+
+    if r is None:
+        print(f"No HTTP response for '{title}' ({year})")
         return None
 
     # TODO: add "s" requests for failed attempts
 
     try:
         data = r.json()
-    except json.decoder.JSONDecodeError:
+    except json.JSONDecodeError:
         raw = r.text
         raw_fixed = fix_invalid_json_escapes(raw)
         try:
             data = json.loads(raw_fixed)
-        except json.decoder.JSONDecodeError as e:
+        except json.JSONDecodeError as e:
             print(f"JSON decoding error for title '{title}': {e}")
-            print(f"Raw (fixed) content:\n{raw_fixed}")
+            print(f"Status: {r.status_code}")
+            print("Raw:", r.text[:500])
+            if "limit" in r.text.lower():
+                REQUEST_LIMIT = omdb_requests_made
+                print("\nOMDb REQUEST LIMIT REACHED (HTML)\n")
             return None
+
+    if data.get("Response") == "False":
+        err = data.get("Error", "")
+        print(f"[OMDb ERROR] {title} ({year}): {err}")
+        if "limit" in err.lower():
+            REQUEST_LIMIT = omdb_requests_made
+            print("\nOMDb REQUEST LIMIT REACHED (JSON)\n")
+        return None
 
     return data
 
@@ -124,10 +138,8 @@ def fetch_omdb_info(title, year):
 def get_plot_per_film(data, check_cache=True):
     title = data.get("title")
     year = data.get("year")
-
     if not title:
         return None, {}
-
     key = make_key(title, year)
 
     if check_cache and key in PLOT_CACHE:
@@ -138,7 +150,6 @@ def get_plot_per_film(data, check_cache=True):
             return cached, {}
 
     omdb = fetch_omdb_info(title, year) if year else fetch_omdb_info(title, None)
-
     if not omdb:
         PLOT_CACHE[key] = (None, {})
         return None, {}
@@ -314,6 +325,7 @@ def test_random_films(input_file, n=5):
 
 if __name__ == "__main__":
     # main(input_file = "data/letterboxd_filtered_pre.jsonl", output_file = "data/letterboxd_filtered_omdb.jsonl")
+
     main(input_file="data/letterboxd_full.jsonl", output_file="data/letterboxd_very_full.jsonl")
     # retry_missing_plots("data/letterboxd_filtered_omdb.jsonl")
-    # test_random_films("data/letterboxd_full.jsonl", 5)
+    # test_random_films("data/letterboxd_full.jsonl", 2)
