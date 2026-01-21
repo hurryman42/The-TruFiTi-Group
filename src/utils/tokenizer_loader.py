@@ -1,6 +1,9 @@
 from pathlib import Path
 
 from tokenizers import Tokenizer as HFTokenizer
+
+from src.config import get_tokenizer_path
+from src.config.config import TokenizerConfig
 from src.tokenizer.bpe_tokenizer import BPETokenizer
 from src.tokenizer.char_tokenizer import CharTokenizer
 
@@ -9,17 +12,18 @@ from src.enums import TokenizerTypeEnum
 type AnyTokenizer = CharTokenizer | HFTokenizer | BPETokenizer
 
 
-def load_tokenizer(tokenizer_type, tokenizer_path: Path) -> AnyTokenizer:
+def load_tokenizer(config: TokenizerConfig) -> AnyTokenizer:
+    path = get_tokenizer_path(config.name)
     tokenizer: AnyTokenizer
-    match tokenizer_type:
+    match config.type:
         case TokenizerTypeEnum.CHAR:
-            tokenizer = load_char_tokenizer(tokenizer_path)
+            tokenizer = load_char_tokenizer(path)
         case TokenizerTypeEnum.BPE_HUGGING_FACE:
-            tokenizer = load_bpe_hugging_face_tokenizer(tokenizer_path)
+            tokenizer = load_bpe_hugging_face_tokenizer(path)
         case TokenizerTypeEnum.BPE:
-            tokenizer = load_bpe_custom_tokenizer(tokenizer_path)
+            tokenizer = load_bpe_custom_tokenizer(path)
         case _:
-            raise ValueError(f"Unknown tokenizer type: {tokenizer_type}")
+            raise ValueError(f"Unknown tokenizer type: {config.type}")
     return tokenizer
 
 

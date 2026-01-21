@@ -50,8 +50,6 @@ class ReviewAdjuster:
         pattern = re.compile(r"\b(" + "|".join(re.escape(w) for w in corrections) + r")\b", re.IGNORECASE)
         result = pattern.sub(lambda m: corrections.get(m.group(), m.group()), review_text)
 
-        # print("Misspelled words:", misspelled)
-
         return result
 
     def replace_grammar_errors(self, review_text: str):

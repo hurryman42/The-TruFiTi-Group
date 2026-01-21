@@ -23,6 +23,6 @@ data:
   train_size: 0.8
   val_size: 0.1
   test_size: 0.1
-  file: merged.jsonl
+  file: letterboxd_filtered_llm.jsonl
   level: 2
   seed: 42
