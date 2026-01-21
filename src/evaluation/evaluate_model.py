@@ -3,14 +3,15 @@ import random
 from pathlib import Path
 
 from src.config import get_data_path
+from src.enums.types import ModelTypeEnum
 from src.evaluation.bert_score import BERTScoreMetric
 from src.evaluation.distinct_n_metric import DistinctNMetric
 from src.evaluation.perplexity import PerplexityMetric
 from src.evaluation.rouge_n_metric import RougeNMetric
-from src.generation.generate_transformer import generate_batch, generate_completions_batch
+from src.generation.generate_utils import load_model_checkpoint
+from src.generation.generate import generate, generate_completions
 from src.utils import get_device, train_val_test_split
 from src.utils.data_loader import read_file_only_reviews
-from src.utils.load_transformer import load_transformer_from_checkpoint
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -27,16 +28,18 @@ def evaluate(
     device,
     test_texts: list[str],
     seq_len: int,
+    model_type: ModelTypeEnum,
     num_samples: int = 100,
     gen_length: int = 50,
     seed: int = 42,
+    token_embedding=None,
 ) -> dict:
-    perplexity_metric = PerplexityMetric(model, tokenizer, device, seq_len)
+    perplexity_metric = PerplexityMetric(model, tokenizer, device, seq_len, token_embedding)
     ppl_result = perplexity_metric.compute(test_texts)
 
     random.seed(seed)
     unconditional_prompts = [""] * num_samples
-    generated_texts = generate_batch(model, tokenizer, device, unconditional_prompts, gen_length)
+    generated_texts = generate(model, tokenizer, device, unconditional_prompts, gen_length, model_type, token_embedding)
 
     d1_result = DistinctNMetric(n=1).compute(generated_texts)
     d2_result = DistinctNMetric(n=2).compute(generated_texts)
@@ -50,7 +53,7 @@ def evaluate(
             prompts.append(prompt)
             references.append(reference)
 
-    completions = generate_completions_batch(model, tokenizer, device, prompts, gen_length)
+    completions = generate_completions(model, tokenizer, device, prompts, gen_length, model_type, token_embedding)
     references_formatted = [[ref] for ref in references]
 
     bert_result = BERTScoreMetric().compute(completions, references_formatted)
@@ -79,8 +82,9 @@ def evaluate(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Evaluate Transformer Language Model")
+    parser = argparse.ArgumentParser(description="Evaluate Language Model")
     parser.add_argument("--model", type=str, required=True, help="Model filename")
+    parser.add_argument("--type", type=str, required=True, choices=["bigram", "gru", "transformer"], help="Model type")
     parser.add_argument("--num_samples", type=int, default=100)
     parser.add_argument("--gen_length", type=int, default=50)
     parser.add_argument("--seed", type=int, default=42)
@@ -90,19 +94,39 @@ if __name__ == "__main__":
     device = get_device()
     print(f"Device: {device}")
 
-    model_path = BASE_DIR / "models" / args.model
-    model, tokenizer, config = load_transformer_from_checkpoint(model_path, device)
+    model_type_map = {
+        "bigram": ModelTypeEnum.BIGRAM,
+        "gru": ModelTypeEnum.GRU,
+        "transformer": ModelTypeEnum.TRANSFORMER,
+    }
+    model_type = model_type_map[args.type]
 
-    # TODO(@hurryman42) muss hier das noch für Level 2 geändert/ hinzugfügt werden?
+    model_path = BASE_DIR / "models" / args.model
+    model_data = load_model_checkpoint(model_path, device, model_type)
+
+    match model_type:
+        case ModelTypeEnum.BIGRAM:
+            model, token_embedding, tokenizer, config = model_data
+            seq_len = config.model.seq_len
+        case ModelTypeEnum.GRU:
+            model, tokenizer, config = model_data
+            token_embedding = None
+            seq_len = config.model.seq_len
+        case ModelTypeEnum.TRANSFORMER:
+            model, tokenizer, config = model_data
+            token_embedding = None
+            seq_len = model.block_size
+
+    # TODO(@hurryman42) muss hier das noch für Level 2 geändert/hinzugefügt werden?
     texts = read_file_only_reviews(get_data_path(config.data.file))
     random.seed(config.data.seed)
     random.shuffle(texts)
 
     _, _, test_texts = train_val_test_split(
         texts,
-        config.data.test_size,
-        config.data.val_size,
         config.data.train_size,
+        config.data.val_size,
+        config.data.test_size,
     )
 
     assert test_texts is not None, "Test split configuration resulted in None."
@@ -114,8 +138,10 @@ if __name__ == "__main__":
         tokenizer,
         device,
         test_texts,
-        seq_len=model.block_size,
+        seq_len=seq_len,
+        model_type=model_type,
         num_samples=args.num_samples,
         gen_length=args.gen_length,
         seed=args.seed,
+        token_embedding=token_embedding,
     )

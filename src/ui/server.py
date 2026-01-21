@@ -7,12 +7,12 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from src.generation.generate_transformer import (
-    generate_single,
-    load_transformer_from_checkpoint,
+from src.generation.generate import (
+    generate as generate_model,
 )
+from src.generation.generate_utils import load_model_checkpoint
 from src.utils.device import get_device
-from src.enums.types import SpecialTokensEnum
+from src.enums.types import SpecialTokensEnum, ModelTypeEnum
 
 BASE_DIR = Path(__file__).parent.parent.parent
 UI_DIR = Path(__file__).parent  # <-- src/ui/
@@ -34,7 +34,8 @@ if not MODEL_PATH.is_absolute():
     MODEL_PATH = BASE_DIR / "models" / MODEL_PATH
 
 device = get_device()
-model, tokenizer, _ = load_transformer_from_checkpoint(MODEL_PATH, device)
+model_data = load_model_checkpoint(MODEL_PATH, device, "transformer")
+model, tokenizer, config = model_data
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory=UI_DIR), name="static")
@@ -67,7 +68,10 @@ def generate(req: GenerateRequest):
         case _:
             raise ValueError("Invalid level")
 
-    raw_output = generate_single(model, tokenizer, device, prompt=prompt, length=200)
+    generated_texts = generate_model(
+        model, tokenizer, device, prompts=[prompt], length=200, model_type=ModelTypeEnum.TRANSFORMER
+    )
+    raw_output = generated_texts[0]
     review = extract_review(raw_output)  # TODO: does not work as intended, prompt still in output
     return {"review": review}
 
