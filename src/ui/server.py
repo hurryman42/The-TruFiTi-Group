@@ -5,46 +5,26 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from src.generation.generate_transformer import (
-    generate_single,
-    load_checkpoint,
-    load_model_tokenizer_from_transformer_checkpoint,
+from src.generation.generate import (
+    generate as generate_model,
 )
+from src.generation.generate_utils import load_model_checkpoint
 from src.utils.device import get_device
-from src.enums.types import SpecialTokensEnum
-
-# parser = argparse.ArgumentParser()
-# parser.add_argument("--model", type=str, required=True)
-# parser.add_argument(
-#    "-l",
-#    "--level",
-#    type=int,
-#    choices=[1, 2],
-#    required=True,
-#    help="LeveL 1 = continue review, 2 = write review to given synopsis",
-# )
-# args, _ = parser.parse_known_args()
-# LEVEL = args.level
+from src.enums.types import SpecialTokensEnum, ModelTypeEnum
 
 BASE_DIR = Path(__file__).parent.parent.parent
 UI_DIR = Path(__file__).parent  # <-- src/ui/
 MODELS_DIR = BASE_DIR / "models"
-# MODEL_PATH = Path(args.model)
-# if not MODEL_PATH.is_absolute():
-#    MODEL_PATH = MODELS_DIR / MODEL_PATH
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory=UI_DIR), name="static")
 
 device = get_device()
-# checkpoint = load_checkpoint(MODEL_PATH, device)
-# model, tokenizer = load_model_tokenizer_from_transformer_checkpoint(checkpoint, device)
 
 
 def load_selected_model(model_name: str):
     model_path = MODELS_DIR / model_name
-    checkpoint = load_checkpoint(model_path, device)
-    return load_model_tokenizer_from_transformer_checkpoint(checkpoint, device)
+    return load_model_checkpoint(MODEL_PATH, device, "transformer")
 
 
 def get_level_from_filename(filename: str) -> int:
@@ -61,11 +41,8 @@ def get_level_from_filename(filename: str) -> int:
 
 def extract_review(prompt, raw_output):
     raw = raw_output.lstrip()
-    # return raw[len(prompt):].lstrip()
-
     prompt_decoded = prompt.replace(str(SpecialTokensEnum.SYN), "").replace(str(SpecialTokensEnum.REV), "").strip()
 
-    # if raw begins with the decoded prompt, trim exactly that
     if raw.startswith(prompt_decoded):
         return raw[len(prompt_decoded) :].lstrip()
 
@@ -74,7 +51,6 @@ def extract_review(prompt, raw_output):
         idx = raw.index(prompt_decoded) + len(prompt_decoded)
         return raw[idx:].lstrip()
 
-    # last fallback: don't destroy content
     return raw
 
 
@@ -97,7 +73,7 @@ class GenerateRequest(BaseModel):
 
 @app.post("/generate")
 def generate(req: GenerateRequest):
-    model, tokenizer = load_selected_model(req.model)
+    model, tokenizer, config = load_selected_model(req.model)
     level = get_level_from_filename(req.model)
     print(f"LEVEL: {level}")
     match level:
@@ -108,7 +84,10 @@ def generate(req: GenerateRequest):
         case _:
             raise ValueError("Invalid level")
 
-    raw_output = generate_single(model, tokenizer, device, prompt=prompt, length=200)
+    generated_texts = generate_model(
+        model, tokenizer, device, prompts=[prompt], length=200, model_type=ModelTypeEnum.TRANSFORMER
+    )
+    raw_output = generated_texts[0]
     if level == 2:
         review = extract_review(prompt, raw_output)
     else:

@@ -92,4 +92,7 @@ class TransformerDecoderOnly(nn.Module):
 
             is_generating = is_generating & (next_token.squeeze(-1) != eos_token_id)
 
+            if not is_generating.any():
+                break
+
         return index
