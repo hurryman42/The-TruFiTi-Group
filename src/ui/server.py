@@ -24,7 +24,14 @@ device = get_device()
 
 def load_selected_model(model_name: str):
     model_path = MODELS_DIR / model_name
-    return load_model_checkpoint(MODEL_PATH, device, "transformer")
+    model_name_lower = model_name.lower()
+    if "transformer" in model_name_lower:
+        return load_model_checkpoint(model_path, device, "transformer")
+    elif "gru" in model_name_lower:
+        return load_model_checkpoint(model_path, device, "gru")
+    elif "bigram" in model_name_lower:
+        return load_model_checkpoint(model_path, device, "bigram")
+    return None
 
 
 def get_level_from_filename(filename: str) -> int:
