@@ -1,0 +1,44 @@
+method: bayes
+metric:
+  name: val_loss
+  goal: minimize
+
+parameters:
+  config:
+    value: gru.yml
+
+  model.input_size:
+    values: [64, 128, 256]
+
+  model.hidden_size:
+    values: [128, 256, 512]
+
+  model.num_layers:
+    values: [1, 2, 3]
+
+  model.dropout:
+    distribution: uniform
+    min: 0.1
+    max: 0.4
+
+#  training.learning_rate:
+#    distribution: log_uniform_values
+#    min: 0.0001
+#    max: 0.001
+#
+#  training.batch_size:
+#    values: [32, 64]
+#
+#  training.warmup_iters:
+#    values: [0, 200, 500]
+#
+#  training.weight_decay:
+#    distribution: log_uniform_values
+#    min: 0.0
+#    max: 0.1
+
+early_terminate:
+  type: hyperband
+  min_iter: 500
+  max_iter: 10000
+  eta: 3

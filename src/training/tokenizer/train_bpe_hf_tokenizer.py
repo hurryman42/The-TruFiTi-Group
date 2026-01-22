@@ -11,7 +11,7 @@ from src.enums.types import SpecialTokensEnum
 from src.utils.data_loader import read_file_only_reviews, read_file_synopsis_review_pairs
 
 VOCAB_SIZE = 4000
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
 
 def train_bpe_tokenizer(texts: list[str], vocab_size: int) -> Tokenizer:

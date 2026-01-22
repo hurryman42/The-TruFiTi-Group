@@ -8,7 +8,7 @@ from src.enums import TransformerCheckpointEnum, BigramCheckpointEnum, GruCheckp
 from src.enums.types import SpecialTokensEnum, ModelTypeEnum
 from src.models.bigram.bigram import Bigram
 from src.models.embeddings.token_embedding import TokenEmbedding
-from src.models.gru.gru import GRULanguageModel
+from src.models.gru.gru import GRU
 from src.models.transformer.transformer import TransformerDecoderOnly
 
 
@@ -121,7 +121,7 @@ def load_model_checkpoint(checkpoint_path: Path, device: torch.device, model_typ
                 f" hidden_size: {gru_model_config.hidden_size}\n"
             )
 
-            gru = GRULanguageModel(
+            gru = GRU(
                 vocab_size=vocab_size,
                 input_size=gru_model_config.input_size,
                 hidden_size=gru_model_config.hidden_size,

@@ -39,6 +39,8 @@ def read_file_synopsis_review_pairs(file_path) -> list[str]:
             for review in reviews:
                 pairs.append(f"{SpecialTokensEnum.SYN} {synopsis} {SpecialTokensEnum.REV} {review}")
 
+    pairs = pairs[:10_000]
+
     print(f"Number of synopsis-review-pairs: {len(pairs):,}".replace(",", "."))
 
     return pairs

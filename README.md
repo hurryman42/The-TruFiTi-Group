@@ -67,7 +67,7 @@ If you see errors about `curl` or `python3` missing, please install them using y
 - `uv run -m src.training.tokenizer.train_bpe_hf_tokenizer --dataset [DATASET] --l [1|2]`
   - standard dataset is `letterboxd_filtered.jsonl`
   - `l` or `level` for level (see above)
-- `uv run -m src.training.models.train_transformer --config [CONFIG]`
+- `uv run -m src.training.models.train_transformer [CONFIG]`
   - for available `[CONFIG]` files, check out `/src/config/`, use file name without the `.yml`-ending
     - e.g. `transformer_default`
 

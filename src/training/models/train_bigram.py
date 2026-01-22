@@ -5,7 +5,6 @@ from src.config import load_config
 from src.config.config import Config, BigramModelConfig, BigramTrainingConfig
 from src.enums import BigramCheckpointEnum, ModelTypeEnum, DataSplitEnum
 from src.models.bigram.bigram import Bigram
-from src.models.embeddings.token_embedding import TokenEmbedding
 from src.utils.device import get_device
 from src.training.trainer import train_loop
 from src.training.train_utils import (
@@ -17,10 +16,9 @@ from src.training.train_utils import (
 from dataclasses import asdict
 
 
-def create_forward_pass(token_embedding):
+def create_forward_pass():
     def forward_pass(model, x, y):
-        embedding = token_embedding(x)
-        _, loss = model(embedding, y)
+        _, loss = model(x, y)
         return loss
 
     return forward_pass
@@ -39,7 +37,6 @@ def main(config: Config):
 
     tokenizer, vocab_size, train_data, val_data = load_and_prepare_data(config)
 
-    token_embedding = TokenEmbedding(vocab_size, model_config.d_model, scale=False).to(device)
     model = Bigram(vocab_size, model_config.d_model).to(device)
 
     total_params = sum(p.numel() for p in model.parameters())
@@ -50,12 +47,13 @@ def main(config: Config):
     )
 
     optimizer = torch.optim.AdamW(
-        list(model.parameters()) + list(token_embedding.parameters()),
+        model.parameters(),
         lr=config.training.learning_rate,
     )
 
-    forward_pass = create_forward_pass(token_embedding)
+    forward_pass = create_forward_pass()
     data = {DataSplitEnum.TRAIN: train_data, DataSplitEnum.VAL: val_data}
+
     metrics = train_loop(
         model,
         forward_pass,
@@ -71,7 +69,6 @@ def main(config: Config):
 
     checkpoint = {
         BigramCheckpointEnum.MODEL: model.state_dict(),
-        BigramCheckpointEnum.TOKEN_EMBEDDING: token_embedding.state_dict(),
         BigramCheckpointEnum.VOCAB_SIZE: vocab_size,
         BigramCheckpointEnum.CONFIG: asdict(config),
         BigramCheckpointEnum.TOKENIZER: tokenizer,

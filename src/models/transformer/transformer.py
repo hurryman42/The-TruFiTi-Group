@@ -25,7 +25,9 @@ class TransformerDecoderOnly(nn.Module):
         self.token_embedding = TokenEmbedding(vocab_size, embedding_dimension, scale=not use_rope)
 
         if not use_rope:
-            self.positional_encoding = PositionalEncoding(max_seq_len, embedding_dimension, dropout)
+            self.positional_encoding = PositionalEncoding(
+                dim_embedding=embedding_dimension, max_seq_len=max_seq_len, dropout=dropout
+            )
 
         self.blocks = nn.ModuleList(
             [

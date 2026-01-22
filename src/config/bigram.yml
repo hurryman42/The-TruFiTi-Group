@@ -1,6 +1,6 @@
 model:
   type: bigram
-  d_model: 128
+  d_model: 64
 
 tokenizer:
   type: bpe_hugging_face
@@ -9,9 +9,9 @@ training:
   batch_size: 64
   seq_len: 128
   learning_rate: 0.001
-  max_iters: 1000
-  eval_interval: 200
-  eval_iters: 50
+  max_iters: 23000
+  eval_interval: 500
+  eval_iters: 30
 
 data:
   train_size: 0.8
