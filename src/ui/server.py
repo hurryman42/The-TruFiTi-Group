@@ -1,4 +1,3 @@
-import argparse
 import uvicorn
 from pathlib import Path
 from fastapi import FastAPI
@@ -14,18 +13,18 @@ from src.generation.generate_transformer import (
 from src.utils.device import get_device
 from src.enums.types import SpecialTokensEnum
 
-parser = argparse.ArgumentParser()
+# parser = argparse.ArgumentParser()
 # parser.add_argument("--model", type=str, required=True)
-parser.add_argument(
-    "-l",
-    "--level",
-    type=int,
-    choices=[1, 2],
-    required=True,
-    help="LeveL 1 = continue review, 2 = write review to given synopsis",
-)
-args, _ = parser.parse_known_args()
-LEVEL = args.level
+# parser.add_argument(
+#    "-l",
+#    "--level",
+#    type=int,
+#    choices=[1, 2],
+#    required=True,
+#    help="LeveL 1 = continue review, 2 = write review to given synopsis",
+# )
+# args, _ = parser.parse_known_args()
+# LEVEL = args.level
 
 BASE_DIR = Path(__file__).parent.parent.parent
 UI_DIR = Path(__file__).parent  # <-- src/ui/
@@ -48,21 +47,35 @@ def load_selected_model(model_name: str):
     return load_model_tokenizer_from_transformer_checkpoint(checkpoint, device)
 
 
-def remove_prompt_tokens(tokenizer, prompt, generated):
-    print("----- DEBUG -----")
-    print("PROMPT TEXT:", repr(prompt))
-    print("GENERATED TEXT:", repr(generated))
+def get_level_from_filename(filename: str) -> int:
+    name = filename.upper()
+    if "L3" in name:
+        return 3
+    if "L2" in name:
+        return 2
+    if "L1" in name:
+        return 1
+    print(f"[WARN] Could not detect LEVEL from model filename '{filename}'. Defaulting to LEVEL 1.")
+    return 1
 
-    prompt_enc = tokenizer.encode(prompt, add_special_tokens=False)
-    prompt_ids = prompt_enc.ids
 
-    gen_enc = tokenizer.encode(generated, add_special_tokens=False)
-    gen_ids = gen_enc.ids
+def extract_review(prompt, raw_output):
+    raw = raw_output.lstrip()
+    # return raw[len(prompt):].lstrip()
 
-    if gen_ids[: len(prompt_ids)] == prompt_ids:
-        gen_ids = gen_ids[len(prompt_ids) :]
+    prompt_decoded = prompt.replace(str(SpecialTokensEnum.SYN), "").replace(str(SpecialTokensEnum.REV), "").strip()
 
-    return tokenizer.decode(gen_ids, skip_special_tokens=False).lstrip()
+    # if raw begins with the decoded prompt, trim exactly that
+    if raw.startswith(prompt_decoded):
+        return raw[len(prompt_decoded) :].lstrip()
+
+    # fallback: smallest overlap match
+    if prompt_decoded in raw:
+        idx = raw.index(prompt_decoded) + len(prompt_decoded)
+        return raw[idx:].lstrip()
+
+    # last fallback: don't destroy content
+    return raw
 
 
 @app.get("/models")
@@ -85,7 +98,9 @@ class GenerateRequest(BaseModel):
 @app.post("/generate")
 def generate(req: GenerateRequest):
     model, tokenizer = load_selected_model(req.model)
-    match LEVEL:
+    level = get_level_from_filename(req.model)
+    print(f"LEVEL: {level}")
+    match level:
         case 1:
             prompt = req.synopsis
         case 2:
@@ -94,8 +109,11 @@ def generate(req: GenerateRequest):
             raise ValueError("Invalid level")
 
     raw_output = generate_single(model, tokenizer, device, prompt=prompt, length=200)
-    # TODO: doesn't work as intended, prompt still in output, must maybe not be fixed here, but in generate from model?
-    review = remove_prompt_tokens(tokenizer, prompt, raw_output)
+    if level == 2:
+        review = extract_review(prompt, raw_output)
+    else:
+        review = raw_output
+    # review = review + "\n\n\n\n\n" + raw_output # DEBUG
     return {"review": review.strip()}
 
 
