@@ -1,3 +1,17 @@
+async function loadModels() {
+    const response = await fetch("/models");
+    const models = await response.json();
+    const sel = document.getElementById("model-select");
+    sel.innerHTML = "";
+    models.forEach(m => {
+        const opt = document.createElement("option");
+        opt.value = m;
+        opt.textContent = m;
+        sel.appendChild(opt);
+    });
+}
+loadModels();
+
 // STAR + HEART RATING (Letterboxd-style)
 const halves = [...document.querySelectorAll(".half")];
 const stars = [...document.querySelectorAll(".star")];
@@ -51,7 +65,7 @@ halves.forEach(h => {
     });
 });
 
-// --- Click to select/reset rating ---
+// --- click to select/reset rating ---
 halves.forEach(h => {
     h.addEventListener("click", () => {
         const val = parseFloat(h.dataset.value);
@@ -75,7 +89,8 @@ document.getElementById("generate-btn").onclick = async () => {
     const payload = {
         synopsis,
         rating: currentRating,
-        liked
+        liked,
+        model: document.getElementById("model-select").value
     };
 
     const response = await fetch("/generate", {
