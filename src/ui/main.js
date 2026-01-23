@@ -84,21 +84,45 @@ heart.onclick = () => {
 
 // --- API SUBMISSION ---
 document.getElementById("generate-btn").onclick = async () => {
-    const synopsis = document.getElementById("synopsis-input").value;
+    const btn = document.getElementById("generate-btn");
+    const output = document.getElementById("output");
+    const synopsis = document.getElementById("synopsis-input").value.trim();
 
-    const payload = {
-        synopsis,
-        rating: currentRating,
-        liked,
-        model: document.getElementById("model-select").value
-    };
+    if (!synopsis) {
+        output.value = "Please input something!";
+        return;
+    }
 
-    const response = await fetch("/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    });
+    try {
+        btn.disabled = true;
+        btn.textContent = "Generating...";
+        output.value = "Generating review...";
 
-    const data = await response.json();
-    document.getElementById("output").value = data.review;
+        const payload = {
+            synopsis,
+            rating: currentRating,
+            liked,
+            model: document.getElementById("model-select").value
+        };
+
+        const response = await fetch("/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        output.value = data.review;
+
+    } catch (error) {
+        console.error("Error:", error);
+        output.value = "Error when generating the review. Please try again.";
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "Generate review";
+    }
 };

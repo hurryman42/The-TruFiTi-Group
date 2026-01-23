@@ -75,7 +75,7 @@ If you see errors about `curl` or `python3` missing, please install them using y
 `uv run -m src.generation.generate --type [bigram, gru, transformer] --model [MODEL] --prompt "good movie because"`
 
 ### Demo
-`uv run -m src.ui.server --model [MODEL] --l [1|2]`
+`uv run -m src.ui.server`
 
 ### Evaluation
 `uv run -m src.evaluation.evaluate_transformer --model [MODEL]`

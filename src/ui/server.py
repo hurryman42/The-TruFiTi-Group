@@ -81,7 +81,7 @@ class GenerateRequest(BaseModel):
 @app.post("/generate")
 def generate(req: GenerateRequest):
     model, tokenizer, config = load_selected_model(req.model)
-    level = get_level_from_filename(req.model)
+    level = config.data.level
     print(f"LEVEL: {level}")
     match level:
         case 1:

@@ -44,24 +44,24 @@ body {
     width: 100%;
     box-sizing: border-box;
 
-    background-color: #2A333A !important;
-    background-clip: padding-box !important;
+    background-color: #2A333A;
+    background-clip: padding-box;
 
-    color: white !important;
+    color: white;
 
     padding: 12px;
     margin: 12px 0 12px 0;
 
     border-radius: 12px;
-    border: 1px solid #2A333A !important;
+    border: 1px solid #2A333A;
 
     font-size: 1.05em;
 
     cursor: pointer;
 
-    appearance: none !important;
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
 
     background-image: url("data:image/svg+xml;utf8, <svg fill='white' width='20' height='20' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'> <path d='M7 10l5 5 5-5'/> </svg>");
     background-repeat: no-repeat;
@@ -70,8 +70,8 @@ body {
 }
 
 #model-select option {
-    background: #2A333A !important;
-    color: white !important;
+    background: #2A333A;
+    color: white;
 }
 
 
@@ -236,4 +236,9 @@ body {
 
 .lb-generate-btn:hover {
     filter: brightness(1.1);
+}
+
+.lb-generate-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
