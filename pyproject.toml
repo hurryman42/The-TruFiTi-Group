@@ -36,6 +36,7 @@ dependencies = [
     "mauve-text>=0.4.0",
     "hf-xet>=1.2.0",
     "detoxify>=0.5.2",
+    "lmstudio>=1.5.0",
 ]
 
 [dependency-groups]

@@ -6,7 +6,8 @@ def test_mauve_metric():
     references = [
         [
             "It is a guide to action that ensures that the military will forever heed Party commands",
-            "It is the guiding principle which guarantees the military forces always being under the commands of the party",
+            "It is the guiding principle which guarantees the military forces always being "
+            "under the commands of the party",
         ]
     ]
     mauve = MauveMetric()
