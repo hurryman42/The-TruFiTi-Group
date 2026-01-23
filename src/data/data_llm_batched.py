@@ -3,8 +3,9 @@ import json
 import random
 from tqdm import tqdm
 from openai import OpenAI
+from deprecated import deprecated
 
-from src.data.data_utils import make_key, load_processed_keys, load_unprocessed_keys
+from src.data.data_utils import make_key, load_keys, load_unprocessed_keys
 
 LM_CLIENT = OpenAI(
     base_url="http://localhost:1234/v1",
@@ -123,9 +124,10 @@ def improve_reviews_batch(films, max_tokens=200):
     return parse_batch_output(output, films)
 
 
+@deprecated(reason="would require a bigger LLM, which would negate the performance gains")
 def improve_reviews_batched(input_file, output_file, batch_size=16):
     load_cache()
-    processed = load_processed_keys(output_file)
+    processed = load_keys(output_file)
     cache_keys = set(REVIEW_CACHE.keys())
     skip = processed | cache_keys
 

@@ -1,10 +1,11 @@
 import os
 import json
 import random
+
 from tqdm import tqdm
 from openai import OpenAI
 
-from src.data.data_utils import make_key, load_processed_keys, load_unprocessed_keys
+from src.data.data_utils import make_key, load_keys, load_unprocessed_keys
 
 LM_CLIENT = OpenAI(
     base_url="http://localhost:1234/v1",
@@ -37,7 +38,8 @@ def load_cache():
         try:
             with open(CACHE_FILE, encoding="utf-8") as f:
                 REVIEW_CACHE = json.load(f)
-        except (OSError, json.JSONDecodeError):
+        except (OSError, json.JSONDecodeError) as e:
+            print(f"Error reading the cache: {e}")
             REVIEW_CACHE = {}
 
 
@@ -135,13 +137,18 @@ def improve_reviews_per_film(data):
 
 def main(input_file, output_file):
     load_cache()
-    processed_keys = load_processed_keys(output_file)
+    processed_keys = load_keys(output_file)
+    print(f"Films already in output: {len(processed_keys)}")
     cache_keys = set(REVIEW_CACHE.keys())
-    keys_to_skip = processed_keys | cache_keys
-    print(f"Already processed: {len(keys_to_skip)} films")
+    print(f"Total cached films: {len(cache_keys)}")
+    input_keys = load_keys(input_file)
+    cached_overlap = input_keys & cache_keys
+    print(f"Films in input AND cache: {len(cached_overlap)}")
+    print(f"Films remaining to truly LLM-process: {len(input_keys - cache_keys)}")
 
-    unprocessed = load_unprocessed_keys(input_file, keys_to_skip)
+    unprocessed = load_unprocessed_keys(input_file, processed_keys)
     print(f"Films remaining to process: {len(unprocessed)}")
+    print("--------------------------------------------------")
 
     processed_count = 0
 
@@ -157,7 +164,7 @@ def main(input_file, output_file):
             outfile.write(json.dumps(result, ensure_ascii=False) + "\n")
 
             processed_count += 1
-            if processed_count % 50 == 0:
+            if processed_count % 1000 == 0:
                 save_cache()
         save_cache()
 
@@ -262,5 +269,7 @@ def test_random_films(input_file="data/letterboxd_filtered_post.jsonl", n=3):
 
 
 if __name__ == "__main__":
-    main(input_file="data/splits/part_3.jsonl", output_file="data/tomerge/letterboxd_filtered_llm_part_3.jsonl")
+    # delete data/letterboxd_filtered_llm.jsonl beforehand if you want it fresh
+    main(input_file="data/letterboxd_filtered_mid.jsonl", output_file="data/letterboxd_filtered_llm.jsonl")
+    # test_random_films(input_file="data/letterboxd_filtered_pre.jsonl")
     # test_random_films()

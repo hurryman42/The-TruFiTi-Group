@@ -44,16 +44,10 @@ omdb:
 	@echo "\033[0;32mOMDb fetching completed successfully.\033[0m"
 
 
-post-filter:
-	@echo "Running post filter..."
-	@uv run -m src.data.data_post_filter
-	@echo "\033[0;32mPost filter completed successfully.\033[0m"
-
-
-llm:
-	@echo "Improving plots with LLM..."
-	@uv run -m src.data.data_llm
-	@echo "\033[0;32mLLM improvement completed successfully.\033[0m"
+mid-filter:
+	@echo "Running mid filter..."
+	@uv run -m src.data.data_mid_filter
+	@echo "\033[0;32mMid filter completed successfully.\033[0m"
 
 
 split:
@@ -62,10 +56,22 @@ split:
 	@echo "\033[0;32mSuccessfully merged.\033[0m"
 
 
+llm:
+	@echo "Improving plots with LLM..."
+	@uv run -m src.data.data_llm
+	@echo "\033[0;32mLLM improvement completed successfully.\033[0m"
+
+
 merge:
 	@echo "Merging splits into a single file..."
 	@uv run -m src.data.data_utils --merge
 	@echo "\033[0;32mSuccessfully merged.\033[0m"
+
+
+post-filter:
+	@echo "Running post filter..."
+	@uv run -m src.data.data_post_filter
+	@echo "\033[0;32mPost filter completed successfully.\033[0m"
 
 
 clean:

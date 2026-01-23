@@ -1,21 +1,20 @@
-import unicodedata
-import argparse
-import hashlib
-import emoji
-import json
-import os
 import re
+import json
+import emoji
+import hashlib
+import argparse
+import unicodedata
 from tqdm import tqdm
-from lingua import Language, LanguageDetectorBuilder
 from spellchecker import SpellChecker
+from lingua import Language, LanguageDetectorBuilder
 
-MIN_REVIEW_WORDS = 10
-MAX_REVIEW_WORDS = 111
+MIN_REVIEW_WORDS = 13
+MAX_REVIEW_WORDS = 145
 MAX_EMOJIS = 0
 MAX_WEIRD_CHARS = 10
 MAX_REPETITION = 15
 MAX_NON_LATIN_CHARS = 0
-MISSPELLED_RATIO = 0.03
+MISSPELLED_RATIO = 0.05
 
 BAD_PATTERNS = re.compile(
     r"(this review may contain spoilers"  # "This review may contain spoilers. I can handle the truth."
@@ -77,11 +76,12 @@ def count_weird_chars(text):
     weird = 0
     for c in text:
         cat = unicodedata.category(c)
-        # So = Symbol other (Braille)
-        # Mn = Mark non spacing (Zalgo combining chars)
-        # Cf = Format
-        # Co = Private use
-        if cat in ("So", "Mn", "Cf", "Co"):
+        # So = symbol other (braille)
+        # Sm = symbol math
+        # Mn = mark non spacing (zalgo combining chars)
+        # Cf = format
+        # Co = private use
+        if cat in ("So", "Sm", "Mn", "Cf", "Co"):
             weird += 1
     return weird
 
@@ -155,7 +155,7 @@ def filter_per_film(data, seen_hashes, detector):
     }
 
 
-def main():
+def main(output_file="data/letterboxd_filtered_pre.jsonl"):
     parser = argparse.ArgumentParser(
         description="Filter Letterboxd data per film", formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -181,9 +181,6 @@ def main():
         .with_preloaded_language_models()
         .build()
     )
-
-    output_filename = "letterboxd_filtered_pre.jsonl"
-    output_file = os.path.join(os.path.dirname(args.input_file), output_filename)
 
     skipped_count = 0
     processed_count = 0

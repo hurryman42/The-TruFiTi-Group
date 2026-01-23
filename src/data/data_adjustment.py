@@ -1,10 +1,11 @@
 import re
-
 import language_tool_python.utils
-from spellchecker import SpellChecker
 import language_tool_python as lang_tool
+from spellchecker import SpellChecker
+from deprecated import deprecated
 
 
+@deprecated(reason="Not part of the data processing pipeline.")
 class ReviewAdjuster:
     def __init__(self):
         self.spell = SpellChecker(distance=1)

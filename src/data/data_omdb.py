@@ -6,7 +6,7 @@ import random
 import requests
 from tqdm import tqdm
 
-from src.data.data_utils import normalize_title, make_key, load_processed_keys, load_unprocessed_keys
+from src.data.data_utils import normalize_title, make_key, load_keys, load_unprocessed_keys
 
 OMDB_KEY = os.environ.get("OMDB_API_KEY")  # export OMDB_API_KEY=xxx
 
@@ -126,6 +126,8 @@ def fetch_omdb_info(title, year):
 
     if data.get("Response") == "False":
         err = data.get("Error", "")
+        if "Movie not found!" in err:
+            return None
         print(f"[OMDb ERROR] {title} ({year}): {err}")
         if "limit" in err.lower():
             REQUEST_LIMIT = omdb_requests_made
@@ -169,13 +171,18 @@ def get_plot_per_film(data, check_cache=True):
 
 def main(input_file, output_file):
     load_cache()
-    processed_keys = load_processed_keys(output_file)
+    processed_keys = load_keys(output_file)
+    print(f"Films already in output: {len(processed_keys)}")
     cache_keys = set(PLOT_CACHE.keys())
-    keys_to_skip = processed_keys | cache_keys
-    print(f"Already processed: {len(keys_to_skip)} films")
+    print(f"Total cached films: {len(cache_keys)}")
+    input_keys = load_keys(input_file)
+    cached_overlap = input_keys & cache_keys
+    print(f"Films in input AND cache: {len(cached_overlap)}")
+    print(f"Films remaining to truly OMDb-process: {len(input_keys - cache_keys)}")
 
-    unprocessed = load_unprocessed_keys(input_file, keys_to_skip)
+    unprocessed = load_unprocessed_keys(input_file, processed_keys)
     print(f"Films remaining to process: {len(unprocessed)}")
+    print("--------------------------------------------------")
 
     skipped_count = 0
     processed_count = 0
@@ -209,7 +216,7 @@ def main(input_file, output_file):
             processed_count += 1
             total_processed_this_run += 1
 
-            if total_processed_this_run % 120 == 0:
+            if total_processed_this_run % 1000 == 0:
                 save_cache()
 
         save_cache()
@@ -324,8 +331,9 @@ def test_random_films(input_file, n=5):
 
 
 if __name__ == "__main__":
-    # main(input_file = "data/letterboxd_filtered_pre.jsonl", output_file = "data/letterboxd_filtered_omdb.jsonl")
+    # delete data/letterboxd_filtered_omdb.jsonl beforehand if you want it fresh
+    main(input_file="data/letterboxd_filtered_pre.jsonl", output_file="data/letterboxd_filtered_omdb.jsonl")
 
-    main(input_file="data/letterboxd_full.jsonl", output_file="data/letterboxd_very_full.jsonl")
+    # main(input_file="data/letterboxd_full.jsonl", output_file="data/letterboxd_very_full.jsonl")
     # retry_missing_plots("data/letterboxd_filtered_omdb.jsonl")
     # test_random_films("data/letterboxd_full.jsonl", 2)
