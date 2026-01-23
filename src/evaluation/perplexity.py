@@ -5,12 +5,11 @@ from src.evaluation.base_evaluation_metric import BaseEvaluationMetric, MetricRe
 
 
 class PerplexityMetric(BaseEvaluationMetric):
-    def __init__(self, model, tokenizer, device, seq_len: int, token_embedding=None):
+    def __init__(self, model, tokenizer, device, seq_len: int):
         self._model = model
         self._tokenizer = tokenizer
         self._device = device
         self._seq_len = seq_len
-        self._token_embedding = token_embedding
 
     @property
     def name(self) -> str:
@@ -42,11 +41,7 @@ class PerplexityMetric(BaseEvaluationMetric):
                 x = data[i : i + self._seq_len].unsqueeze(0)
                 y = data[i + 1 : i + self._seq_len + 1].unsqueeze(0)
 
-                if self._token_embedding is not None:
-                    embeddings = self._token_embedding(x)
-                    logits, _ = self._model(embeddings, y)
-                else:
-                    logits = self._model(x)
+                logits = self._model(x)
                 loss = torch.nn.functional.cross_entropy(
                     logits.view(-1, logits.size(-1)),
                     y.view(-1),

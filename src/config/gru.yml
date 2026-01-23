@@ -5,6 +5,7 @@
     num_layers: 2
     seq_len: 128
     dropout: 0.2
+
   tokenizer:
     type: bpe_hugging_face
 

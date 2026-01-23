@@ -47,13 +47,13 @@ class GRU(nn.Module):
     @torch.no_grad()
     def generate(
         self,
-        prompt_ids: torch.Tensor,
+        index: torch.Tensor,
         max_new_tokens: int,
         eos_token_id: int,
     ) -> torch.Tensor:
         self.eval()
 
-        generated = prompt_ids.clone()
+        generated = index.clone()
         batch_size = generated.size(0)
         device = generated.device
 

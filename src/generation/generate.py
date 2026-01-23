@@ -23,8 +23,6 @@ def generate(
     device: torch.device,
     prompts: list[str],
     length: int,
-    model_type: ModelTypeEnum,
-    token_embedding=None,
 ) -> list[str]:
     if not prompts:
         return []
@@ -32,14 +30,7 @@ def generate(
     eos_id = tokenizer.token_to_id(SpecialTokensEnum.EOS)
     idx = prepare_prompts(prompts, tokenizer, device)
 
-    match model_type:
-        case ModelTypeEnum.BIGRAM:
-            generated = model.generate(token_embedding, idx, eos_id, length)
-        case ModelTypeEnum.GRU | ModelTypeEnum.TRANSFORMER:
-            generated = model.generate(idx, length, eos_id)
-        case _:
-            raise ValueError(f"Unknown model type: {model_type}")
-
+    generated = model.generate(index=idx, eos_token_id=eos_id, max_new_tokens=length)
     return decode_generated(generated, tokenizer, eos_id)
 
 
@@ -49,10 +40,8 @@ def generate_completions(
     device: torch.device,
     prompts: list[str],
     length: int,
-    model_type: ModelTypeEnum,
-    token_embedding=None,
 ) -> list[str]:
-    full_texts = generate(model, tokenizer, device, prompts, length, model_type, token_embedding)
+    full_texts = generate(model, tokenizer, device, prompts, length)
     return extract_completions(full_texts, prompts)
 
 
@@ -78,18 +67,11 @@ if __name__ == "__main__":
     model_type = model_type_map[args.type]
 
     # returns different things based on the model type
-    model_data = load_model_checkpoint(model_path, device, model_type)
+    model, tokenizer, config = load_model_checkpoint(model_path, device, model_type)
 
     print_generation_header(args.prompt)
 
     prompts = [args.prompt] * args.num
-
-    match model_type:
-        case ModelTypeEnum.BIGRAM:
-            model, token_embedding, tokenizer, config = model_data
-            results = generate(model, tokenizer, device, prompts, args.length, model_type, token_embedding)
-        case ModelTypeEnum.GRU | ModelTypeEnum.TRANSFORMER:
-            model, tokenizer, config = model_data
-            results = generate(model, tokenizer, device, prompts, args.length, model_type)
+    results = generate(model, tokenizer, device, prompts, args.length)
 
     print_results(results, args.num)
