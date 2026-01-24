@@ -11,33 +11,6 @@ from src.models.gru.gru import GRU
 from src.models.transformer.transformer import TransformerDecoderOnly
 
 
-def prepare_prompts(
-    prompts: list[str],
-    tokenizer: Tokenizer,
-    device: torch.device,
-) -> torch.Tensor:
-    if not prompts:
-        return torch.empty(0, dtype=torch.long, device=device)
-
-    bos_id = tokenizer.token_to_id(SpecialTokensEnum.BOS)
-    pad_id = tokenizer.token_to_id(SpecialTokensEnum.PAD)
-
-    encoded = []
-    for p in prompts:
-        if p:
-            encoded.append(tokenizer.encode(p).ids)
-        else:
-            encoded.append([bos_id])
-
-    max_prompt_len = max(len(e) for e in encoded)
-    padded = []
-    for e in encoded:
-        padding = [pad_id] * (max_prompt_len - len(e))
-        padded.append(padding + e)
-
-    return torch.tensor(padded, dtype=torch.long, device=device)
-
-
 def decode_generated(
     generated: torch.Tensor,
     tokenizer: Tokenizer,
@@ -49,19 +22,6 @@ def decode_generated(
             tokens = tokens[: tokens.index(eos_id)]
         results.append(tokenizer.decode(tokens))
     return results
-
-
-def extract_completions(
-    full_texts: list[str],
-    prompts: list[str],
-) -> list[str]:
-    completions = []
-    for text, prompt in zip(full_texts, prompts, strict=False):
-        if prompt and text.startswith(prompt):
-            completions.append(text[len(prompt) :])
-        else:
-            completions.append(text)
-    return completions
 
 
 def print_generation_header(prompt: str):

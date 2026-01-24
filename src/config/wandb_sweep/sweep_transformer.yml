@@ -23,6 +23,9 @@ parameters:
   model.ff_hidden_dim:
     values: [64, 128, 256]
 
+  model.seq_len:
+    values: [128, 256]
+
 #  model.dropout:
 #    distribution: uniform
 #    min: 0.05

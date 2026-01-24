@@ -3,7 +3,7 @@ import random
 from pathlib import Path
 
 from src.config import get_data_path
-from src.enums.types import ModelTypeEnum
+from src.enums.types import ModelTypeEnum, SpecialTokensEnum
 from src.evaluation.bert_score import BERTScoreMetric
 from src.evaluation.distinct_n_metric import DistinctNMetric
 from src.evaluation.perplexity import PerplexityMetric
@@ -11,7 +11,7 @@ from src.evaluation.rouge_n_metric import RougeNMetric
 from src.generation.generate_utils import load_model_checkpoint
 from src.generation.generate import generate, generate_completions
 from src.utils import get_device, train_val_test_split
-from src.utils.data_loader import read_file_only_reviews
+from src.utils.data_loader import read_file_only_reviews, read_file_synopsis_review_pairs
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -20,6 +20,17 @@ def split_review_half(review: str) -> tuple[str, str]:
     words = review.split()
     mid = len(words) // 2
     return " ".join(words[:mid]), " ".join(words[mid:])
+
+
+def extract_synopsis_and_review(text: str) -> tuple[str, str]:
+    parts = text.split(SpecialTokensEnum.REV)
+    if len(parts) != 2:
+        return "", ""
+
+    synopsis = parts[0].replace(SpecialTokensEnum.SYN, "").strip()
+    review = parts[1].strip()
+
+    return synopsis, review
 
 
 def evaluate(
@@ -31,6 +42,7 @@ def evaluate(
     num_samples: int = 100,
     gen_length: int = 50,
     seed: int = 42,
+    level: int = 2,
 ) -> dict:
     perplexity_metric = PerplexityMetric(model, tokenizer, device, seq_len)
     ppl_result = perplexity_metric.compute(test_texts)
@@ -45,11 +57,20 @@ def evaluate(
     samples = random.sample(test_texts, min(num_samples, len(test_texts)))
 
     prompts, references = [], []
-    for review in samples:
-        prompt, reference = split_review_half(review)
-        if prompt and reference:
-            prompts.append(prompt)
-            references.append(reference)
+
+    if level == 2:
+        for text in samples:
+            synopsis, review = extract_synopsis_and_review(text)
+            if synopsis and review:
+                prompt = f"{SpecialTokensEnum.SYN} {synopsis} {SpecialTokensEnum.REV}"
+                prompts.append(prompt)
+                references.append(review)
+    else:
+        for review in samples:
+            prompt, reference = split_review_half(review)
+            if prompt and reference:
+                prompts.append(prompt)
+                references.append(reference)
 
     completions = generate_completions(model, tokenizer, device, prompts, gen_length)
     references_formatted = [[ref] for ref in references]
@@ -86,6 +107,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_samples", type=int, default=100)
     parser.add_argument("--gen_length", type=int, default=50)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--level", type=int, choices=[1, 2], default=2)
 
     args = parser.parse_args()
 
@@ -102,8 +124,12 @@ if __name__ == "__main__":
     model_path = BASE_DIR / "models" / args.model
     model, tokenizer, config = load_model_checkpoint(model_path, device, model_type)
 
-    # TODO(@hurryman42) muss hier das noch für Level 2 geändert/hinzugefügt werden?
-    texts = read_file_only_reviews(get_data_path(config.data.file))
+    data_path = get_data_path(config.data.file)
+    if args.level == 2:
+        texts = read_file_synopsis_review_pairs(data_path)
+    else:
+        texts = read_file_only_reviews(get_data_path(config.data.file))
+
     random.seed(config.data.seed)
     random.shuffle(texts)
 
@@ -132,4 +158,5 @@ if __name__ == "__main__":
         num_samples=args.num_samples,
         gen_length=args.gen_length,
         seed=args.seed,
+        level=args.level,
     )

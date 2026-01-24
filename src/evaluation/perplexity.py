@@ -1,10 +1,10 @@
 import torch
 
 from src.enums.types import SpecialTokensEnum
-from src.evaluation.base_evaluation_metric import BaseEvaluationMetric, MetricResult
+from src.evaluation.base_evaluation_metric import MetricResult
 
 
-class PerplexityMetric(BaseEvaluationMetric):
+class PerplexityMetric:
     def __init__(self, model, tokenizer, device, seq_len: int):
         self._model = model
         self._tokenizer = tokenizer
@@ -15,16 +15,12 @@ class PerplexityMetric(BaseEvaluationMetric):
     def name(self) -> str:
         return "perplexity"
 
-    def compute(
-        self,
-        generated: list[str],
-        references: list[list[str]] | None = None,
-    ) -> MetricResult:
+    def compute(self, texts: list[str]) -> MetricResult:
         bos_id = self._tokenizer.token_to_id(SpecialTokensEnum.BOS)
         eos_id = self._tokenizer.token_to_id(SpecialTokensEnum.EOS)
 
         all_tokens = []
-        for text in generated:
+        for text in texts:
             encoded = self._tokenizer.encode(text).ids
             all_tokens.append(bos_id)
             all_tokens.extend(encoded)
