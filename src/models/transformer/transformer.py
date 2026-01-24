@@ -22,6 +22,7 @@ class TransformerDecoderOnly(nn.Module):
     ):
         super().__init__()
         self.use_rope = use_rope
+        self.num_blocks = num_blocks
         self.token_embedding = TokenEmbedding(vocab_size, embedding_dimension, scale=not use_rope)
 
         if not use_rope:
@@ -47,6 +48,23 @@ class TransformerDecoderOnly(nn.Module):
         self.ln_head = nn.Linear(embedding_dimension, vocab_size)  # output projection
 
         self.block_size = max_seq_len
+
+        self.apply(self._init_weights)
+
+        for block in self.blocks:
+            torch.nn.init.normal_(block.attention.W_o.weight, mean=0.0, std=0.02 / (2 * num_blocks) ** 0.5)
+            torch.nn.init.normal_(block.feedforward.net[2].weight, mean=0.0, std=0.02 / (2 * num_blocks) ** 0.5)
+
+    def _init_weights(self, module):
+        if isinstance(module, nn.Linear):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+            if module.bias is not None:
+                torch.nn.init.zeros_(module.bias)
+        elif isinstance(module, nn.Embedding):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+        elif isinstance(module, nn.LayerNorm):
+            torch.nn.init.ones_(module.weight)
+            torch.nn.init.zeros_(module.bias)
 
     def forward(self, index):
         batch_size, seq_length = index.shape
