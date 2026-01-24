@@ -249,9 +249,10 @@ class Config:
     tokenizer: TokenizerConfig
     training: TrainingConfig
     data: DataConfig
+    config_file_name: str | None
 
     @classmethod
-    def from_dict(cls, raw: dict) -> Self:
+    def from_dict(cls, raw: dict, config_file_name: str | None = None) -> Self:
         data_config = DataConfig.from_dict(raw["data"])
         model_config = model_config_from_dict(raw["model"])
         return cls(
@@ -259,10 +260,11 @@ class Config:
             tokenizer=TokenizerConfig.from_dict(raw["tokenizer"], data_config.level, data_config.file_name),
             training=training_config_from_dict(raw["training"], model_config.type),
             data=data_config,
+            config_file_name=config_file_name,
         )
 
     @classmethod
-    def from_yaml(cls, path: str | Path) -> Self:
+    def from_yaml(cls, path: Path) -> Self:
         with open(path) as f:
             raw = yaml.safe_load(f)
-        return cls.from_dict(raw)
+        return cls.from_dict(raw, config_file_name=path.stem)

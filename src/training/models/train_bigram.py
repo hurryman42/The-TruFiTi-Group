@@ -1,5 +1,6 @@
 import argparse
 import torch
+import wandb
 
 from src.config import load_config
 from src.config.config import Config, BigramModelConfig, BigramTrainingConfig
@@ -14,6 +15,8 @@ from src.training.train_utils import (
     save_metrics,
 )
 from dataclasses import asdict
+
+from src.utils.wandb_transfomer_config_override import apply_wandb_overrides
 
 
 def create_forward_pass():
@@ -30,6 +33,18 @@ def main(config: Config):
     model_config: BigramModelConfig = config.model
     train_config: BigramTrainingConfig = config.training
 
+    if wandb.run is None:
+        wandb.init(
+            project="film-critic-lm",
+            entity="the-trufiti-group",
+            config=asdict(config),
+        )
+
+    if wandb.config.get("config"):
+        config = load_config(wandb.config.config)
+        config = apply_wandb_overrides(config)
+        wandb.config.update(asdict(config), allow_val_change=True)
+
     device = get_device()
 
     print(f"Using device: {device}")
@@ -42,13 +57,11 @@ def main(config: Config):
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Model parameters: {total_params:,}\n".replace(",", "."))
 
-    print_training_statistics(
-        config.training.batch_size, config.training.seq_len, config.training.max_iters, train_data.numel()
-    )
+    print_training_statistics(train_config.batch_size, train_config.seq_len, train_config.max_iters, train_data.numel())
 
     optimizer = torch.optim.AdamW(
         model.parameters(),
-        lr=config.training.learning_rate,
+        lr=train_config.learning_rate,
     )
 
     forward_pass = create_forward_pass()
@@ -65,6 +78,7 @@ def main(config: Config):
         train_config.eval_interval,
         train_config.eval_iters,
         device,
+        wandb,
     )
 
     checkpoint = {
@@ -76,6 +90,8 @@ def main(config: Config):
 
     model_save_path = save_model_checkpoint(config, total_params, checkpoint)
     save_metrics(metrics, model_save_path)
+
+    wandb.finish()
 
 
 if __name__ == "__main__":
