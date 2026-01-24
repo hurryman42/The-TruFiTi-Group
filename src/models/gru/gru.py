@@ -33,7 +33,7 @@ class GRU(nn.Module):
         self.layer_norm = nn.LayerNorm(hidden_size)
         self.fc_out = nn.Linear(hidden_size, vocab_size)
 
-    def forward(self, x: torch.Tensor, hidden: torch.Tensor | None = None) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x: torch.Tensor, hidden: torch.Tensor | None = None) -> torch.Tensor:
         embeds = self.embedding(x)  # [batch_size, seq_len, input_size]
         embeds = self.embed_dropout(embeds)
 
@@ -42,7 +42,7 @@ class GRU(nn.Module):
         output = self.layer_norm(output)
         logits = self.fc_out(output)  # [batch_size, seq_len, vocab_size]
 
-        return logits, hidden
+        return logits
 
     @torch.no_grad()
     def generate(

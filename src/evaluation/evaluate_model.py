@@ -118,12 +118,17 @@ if __name__ == "__main__":
 
     print(f"Test reviews: {len(test_texts)}")
 
+    if model_type == ModelTypeEnum.BIGRAM:
+        seq_len = config.training.seq_len
+    else:
+        seq_len = config.model.seq_len
+
     evaluate(
         model,
         tokenizer,
         device,
         test_texts,
-        seq_len=config.model.seq_len,
+        seq_len=seq_len,
         num_samples=args.num_samples,
         gen_length=args.gen_length,
         seed=args.seed,

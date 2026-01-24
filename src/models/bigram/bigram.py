@@ -10,24 +10,11 @@ class Bigram(nn.Module):
         self.lm_head = nn.Linear(d_model, vocab_size)
         self.vocab_size = vocab_size
 
-    def forward(
-        self, idx: torch.Tensor, targets: torch.Tensor | None = None
-    ) -> tuple[torch.Tensor, torch.Tensor | None]:
+    def forward(self, idx: torch.Tensor) -> torch.Tensor:
         # idx: [batch_size, seq_len]
         embeddings = self.token_embedding(idx)  # [batch_size, seq_len, d_model]
-        embeddings_shifted = embeddings[:, :-1, :]
-        logits = self.lm_head(embeddings_shifted)  # [batch_size, seq_len, vocab_size]
-
-        if targets is None:
-            loss = None
-        else:
-            targets_shifted = targets[:, 1:]  # [batch_size, seq_len-1]
-
-            logits_flat = logits.reshape(-1, self.vocab_size)
-            targets_flat = targets_shifted.reshape(-1)
-            loss = F.cross_entropy(logits_flat, targets_flat)
-
-        return logits, loss
+        logits = self.lm_head(embeddings)  # [batch_size, seq_len, vocab_size]
+        return logits
 
     @torch.no_grad()
     def generate(
