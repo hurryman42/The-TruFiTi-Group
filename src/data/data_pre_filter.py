@@ -1,18 +1,20 @@
-import argparse
-import hashlib
-import json
-import os
 import re
+import json
+import emoji
+import hashlib
+import argparse
 import unicodedata
 from tqdm import tqdm
-
+from spellchecker import SpellChecker
 from lingua import Language, LanguageDetectorBuilder
-from src.data.data_adjustment import ReviewAdjuster
 
-DEFAULT_MIN_REVIEW_WORDS = 15
-DEFAULT_MAX_EMOJIS = 5
-DEFAULT_MAX_WEIRD_CHARS = 10
-DEFAULT_MAX_REPETITION = 15
+MIN_REVIEW_WORDS = 13
+MAX_REVIEW_WORDS = 145
+MAX_EMOJIS = 0
+MAX_WEIRD_CHARS = 10
+MAX_REPETITION = 15
+MAX_NON_LATIN_CHARS = 0
+MISSPELLED_RATIO = 0.05
 
 BAD_PATTERNS = re.compile(
     r"(this review may contain spoilers"  # "This review may contain spoilers. I can handle the truth."
@@ -23,10 +25,12 @@ BAD_PATTERNS = re.compile(
     r"|challenge$"  # "All Disney Features and Shorts Challenge"
     r"|^review from"  # "Review from my VOD column 'This Week on Demand'"
     r"|watchlist$"  # "French Film Noir Watchlist"
-    r"|^action! -)"  # "ACTION! - KILLER MIKE"
+    r"|^action! -)",  # "ACTION! - KILLER MIKE"
+    flags=re.IGNORECASE | re.MULTILINE,
 )
 
-review_adjuster = ReviewAdjuster()
+# review_adjuster = ReviewAdjuster()
+spell = SpellChecker()
 
 
 def count_non_latin_script_chars(text):
@@ -34,31 +38,24 @@ def count_non_latin_script_chars(text):
     for c in text:
         if c.isalpha():
             try:
-                name = unicodedata.name(c, "")
+                name = unicodedata.name(c)
                 if "LATIN" not in name:
                     count += 1
-            except Exception:
+            except ValueError:
                 count += 1
     return count
 
 
 def count_emojis(text):
-    emoji_pattern = re.compile(
-        "["
-        "\U0001f600-\U0001f64f"  # emoticons
-        "\U0001f300-\U0001f5ff"  # symbols & pictographs
-        "\U0001f680-\U0001f6ff"  # transport & map symbols
-        "\U0001f1e0-\U0001f1ff"  # flags
-        "]+",
-        flags=re.UNICODE,
-    )
-    return len(emoji_pattern.findall(text))
+    return sum(1 for c in text if c in emoji.EMOJI_DATA)
 
 
-def has_sufficient_synopsis(synopsis, min_words):
-    if not synopsis or not isinstance(synopsis, str):
-        return False
-    return len(synopsis.split()) >= min_words
+def misspelled_ratio(text):
+    words = re.findall(r"[A-Za-z']+", text.lower())
+    if not words:
+        return 1.0
+    misspelled = spell.unknown(words)
+    return len(misspelled) / len(words)
 
 
 def get_hash(text):
@@ -79,11 +76,12 @@ def count_weird_chars(text):
     weird = 0
     for c in text:
         cat = unicodedata.category(c)
-        # So = Symbol other (Braille)
-        # Mn = Mark nonspacing (Zalgo combining chars)
-        # Cf = Format
-        # Co = Private use
-        if cat in ("So", "Mn", "Cf", "Co"):
+        # So = symbol other (braille)
+        # Sm = symbol math
+        # Mn = mark non spacing (zalgo combining chars)
+        # Cf = format
+        # Co = private use
+        if cat in ("So", "Sm", "Mn", "Cf", "Co"):
             weird += 1
     return weird
 
@@ -93,56 +91,50 @@ def has_excessive_repetition(text, max_repeat):
     return bool(re.search(pattern, text))
 
 
-def is_valid_review(
-    text,
-    max_non_latin_chars,
-    detector,
-):
+def is_valid_review(text, detector):
     if not text or not text.strip():
         return False
 
-    text_lower = text.lower().strip()
+    text_clean = text.strip()
+    words = text.lower().strip().split()
+    word_count = len(words)
 
-    if len(text_lower.split()) < DEFAULT_MIN_REVIEW_WORDS:
+    if word_count < MIN_REVIEW_WORDS:
+        return False
+    if word_count > MAX_REVIEW_WORDS:
         return False
 
-    if BAD_PATTERNS.search(text_lower):
+    if BAD_PATTERNS.search(text_clean):
         return False
 
-    if count_emojis(text) > DEFAULT_MAX_EMOJIS:
+    if count_emojis(text_clean) > MAX_EMOJIS:
         return False
 
-    if count_non_latin_script_chars(text) > max_non_latin_chars:
+    if count_weird_chars(text_clean) > MAX_WEIRD_CHARS:
         return False
 
-    if count_weird_chars(text) > DEFAULT_MAX_WEIRD_CHARS:
+    if has_excessive_repetition(text_clean, MAX_REPETITION):
         return False
 
-    if has_excessive_repetition(text, DEFAULT_MAX_REPETITION):
+    if count_non_latin_script_chars(text_clean) > MAX_NON_LATIN_CHARS:
         return False
 
-    if not is_english(text, detector):
+    if not is_english(text_clean, detector):
         return False
 
-    # if not review_adjuster.is_grammar_adequate(text):
-    #    return False
+    if misspelled_ratio(text_clean) > MISSPELLED_RATIO:
+        return False
 
     return True
 
 
-def filter_per_film(
-    data,
-    min_synopsis_words,
-    max_non_latin_chars,
-    seen_hashes,
-    detector,
-):
+def filter_per_film(data, seen_hashes, detector):
     reviews = data.get("reviews", [])
     filtered_reviews = []
 
     for r in reviews:
         review_text = r.get("review_text", "")
-        if not is_valid_review(review_text, max_non_latin_chars, detector):
+        if not is_valid_review(review_text, detector):
             continue
 
         text_hash = get_hash(review_text)
@@ -150,13 +142,9 @@ def filter_per_film(
             continue
         seen_hashes.add(text_hash)
 
-        fixed_review_text = review_adjuster.adjust_review(review_text)
-        filtered_reviews.append(fixed_review_text)
+        filtered_reviews.append(review_text)
 
     if not filtered_reviews:
-        return None
-
-    if min_synopsis_words > 0 and not has_sufficient_synopsis(data.get("synopsis"), min_synopsis_words):
         return None
 
     return {
@@ -167,24 +155,11 @@ def filter_per_film(
     }
 
 
-def main():
+def main(output_file="data/letterboxd_filtered_pre.jsonl"):
     parser = argparse.ArgumentParser(
-        description="Filter Letterboxd data by film or review", formatter_class=argparse.RawDescriptionHelpFormatter
+        description="Filter Letterboxd data per film", formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("input_file", help="Input JSONL file path")
-    parser.add_argument(
-        "--min-synopsis-words",
-        type=int,
-        required=True,
-        help="Minimum number of words required in synopsis",
-    )
-
-    parser.add_argument(
-        "--max-non-latin-chars",
-        type=int,
-        required=True,
-        help="Maximum number of non-Latin characters allowed per review",
-    )
     args = parser.parse_args()
 
     detector = (
@@ -207,11 +182,6 @@ def main():
         .build()
     )
 
-    output_filename = "letterboxd_filtered.jsonl"
-    if args.min_synopsis_words > 0:
-        output_filename = "letterboxd_filtered_short_synopsis.jsonl"
-    output_file = os.path.join(os.path.dirname(args.input_file), output_filename)
-
     skipped_count = 0
     processed_count = 0
     total_films = 0
@@ -219,16 +189,17 @@ def main():
     filtered_films = 0
     filtered_reviews = 0
 
+    with open(args.input_file, encoding="utf-8") as infile:
+        total_lines = sum(1 for _ in infile)
+
     with open(args.input_file, encoding="utf-8") as infile, open(output_file, "w", encoding="utf-8") as outfile:
         seen_hashes = set()
-        for index, line in tqdm(enumerate(infile, 1)):
+        for index, line in tqdm(enumerate(infile, 1), total=total_lines):
             try:
                 data = json.loads(line)
                 total_films += 1
                 total_reviews += len(data.get("reviews", []))
-                filtered = filter_per_film(
-                    data, args.min_synopsis_words, args.max_non_latin_chars, seen_hashes, detector
-                )
+                filtered = filter_per_film(data, seen_hashes, detector)
                 if filtered:
                     outfile.write(json.dumps(filtered, ensure_ascii=False) + "\n")
                     processed_count += 1
@@ -240,13 +211,16 @@ def main():
                 print(f"Skipped invalid JSON at line {index}: {e}")
                 continue
 
-    print("\n---------- Processing complete! --- Summary: ----------")
-    print(f"Processed: {processed_count} entries")
-    print(f"Skipped entries: {skipped_count}")
-    print(f"Films before filtering: {total_films}")
+    print("\n---------- Pre-filter complete! --- Summary: ----------")
+    print(f"Processed films:          {processed_count}")
+    print(f"Skipped films:            {skipped_count}")
+    print("------------------------------------------")
+    print(f"Films before filtering:   {total_films}")
     print(f"Reviews before filtering: {total_reviews}")
-    print(f"Films after filtering: {filtered_films}")
-    print(f"Reviews after filtering: {filtered_reviews}")
+    print("------------------------------------------")
+    print(f"Films after filtering:    {filtered_films}")
+    print(f"Reviews after filtering:  {filtered_reviews}")
+    print("------------------------------------------")
     print(f"Saved to {output_file}")
 
 

@@ -1,19 +1,11 @@
-# downloads Letterboxd dataset & runs data_filter.py on it
-
 DATA_DIR := data
-
 DATA_FILE := $(DATA_DIR)/letterboxd_full.jsonl
-SRC_FILE := src/data/data_filter.py
 
 DATASET_URL := https://huggingface.co/datasets/pkchwy/letterboxd-all-movie-data/resolve/main/full_dump.jsonl
 
-MIN_SYNOPSIS_WORDS ?= 0
-MAX_NON_LATIN_CHARS ?= 0
 
+data: check-deps download-dataset verify-download pre-filter
 
-data: check-deps download-dataset verify-download run-filter clean
-
-data-no-filter: MIN_SYNOPSIS_WORDS=0
 data-no-filter: MAX_NON_LATIN_CHARS=99999
 data-no-filter: data
 
@@ -40,14 +32,46 @@ verify-download:
 	fi
 
 
-run-filter: $(SRC_FILE)
-	@echo "Running data filter..."
-	@echo "  min synopsis words: $(MIN_SYNOPSIS_WORDS)"
-	@echo "  max non-Latin chars: $(MAX_NON_LATIN_CHARS)"
-	@uv run python $(SRC_FILE) $(DATA_FILE) \
-		--min-synopsis-words $(MIN_SYNOPSIS_WORDS) \
-		--max-non-latin-chars $(MAX_NON_LATIN_CHARS)
-	@echo "\033[0;32mData filter completed successfully.\033[0m"
+pre-filter:
+	@echo "Running pre filter..."
+	@uv run -m src.data.data_pre_filter $(DATA_FILE)
+	@echo "\033[0;32mPre filter completed successfully.\033[0m"
+
+
+omdb:
+	@echo "Fetching plot info from OMDb..."
+	@uv run -m src.data.data_omdb
+	@echo "\033[0;32mOMDb fetching completed successfully.\033[0m"
+
+
+mid-filter:
+	@echo "Running mid filter..."
+	@uv run -m src.data.data_mid_filter
+	@echo "\033[0;32mMid filter completed successfully.\033[0m"
+
+
+split:
+	@echo "Splitting dataset into multiple files..."
+	@uv run -m src.data.data_utils --split
+	@echo "\033[0;32mSuccessfully merged.\033[0m"
+
+
+llm:
+	@echo "Improving plots with LLM..."
+	@uv run -m src.data.data_llm
+	@echo "\033[0;32mLLM improvement completed successfully.\033[0m"
+
+
+merge:
+	@echo "Merging splits into a single file..."
+	@uv run -m src.data.data_utils --merge
+	@echo "\033[0;32mSuccessfully merged.\033[0m"
+
+
+post-filter:
+	@echo "Running post filter..."
+	@uv run -m src.data.data_post_filter
+	@echo "\033[0;32mPost filter completed successfully.\033[0m"
 
 
 clean:
@@ -57,13 +81,16 @@ clean:
 
 .PHONY: all check-deps run-filter clean
 
+
 test:
 	uv run pytest
+
 
 lint:
 	uv run ruff check .
 	uv run ruff format --check .
 	uv run mypy .
+
 
 format:
 	uv run ruff check --fix .
