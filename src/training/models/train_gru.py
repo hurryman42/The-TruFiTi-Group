@@ -7,7 +7,7 @@ import wandb
 from src.config import load_config
 from src.config.config import Config, GRUModelConfig, GRUTrainingConfig
 from src.enums import ModelTypeEnum, GruCheckpointEnum, DataSplitEnum
-from src.models.gru.gru import GRULanguageModel
+from src.models.gru.gru import GRU
 from src.utils.device import get_device
 from src.utils.wandb_transfomer_config_override import apply_wandb_overrides
 from src.training.trainer import train_loop
@@ -34,14 +34,15 @@ def main(config: Config):
     model_config: GRUModelConfig = config.model
     train_config: GRUTrainingConfig = config.training
 
-    wandb.init(
-        project="film-critic-lm",
-        entity="the-trufiti-group",
-        config=asdict(config),
-    )
+    if wandb.run is None:
+        wandb.init(
+            project="film-critic-lm",
+            entity="the-trufiti-group",
+            config=asdict(config),
+        )
 
     if wandb.config.get("config"):
-        config = Config.from_yaml(wandb.config.config)
+        config = load_config(wandb.config.config)
         config = apply_wandb_overrides(config)
         wandb.config.update(asdict(config), allow_val_change=True)
 
@@ -55,7 +56,7 @@ def main(config: Config):
     print(f"Total tokens: {len(train_data) + len(val_data):,}".replace(",", "."))
     print_training_statistics(train_config.batch_size, model_config.seq_len, train_config.max_iters, train_data.numel())
 
-    model = GRULanguageModel(
+    model = GRU(
         vocab_size=vocab_size,
         input_size=model_config.input_size,
         hidden_size=model_config.hidden_size,

@@ -41,4 +41,8 @@ def get_model_save_path(config: Config, num_params: int) -> Path:
     params_millions = num_params / 1_000_000
     time = datetime.now().strftime("%y-%m-%d_%H-%M-%S")
 
-    return MODEL_DIR / f"{config.model.type}_L{config.data.level}_{params_millions:.1f}M_{time}.pt"
+    name = config.config_file_name
+    if name is None:
+        name = config.model.type
+
+    return MODEL_DIR / f"{name}_L{config.data.level}_{params_millions:.1f}M_{time}.pt"

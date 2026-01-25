@@ -10,7 +10,7 @@ from src.generation.generate import (
 )
 from src.generation.generate_utils import load_model_checkpoint
 from src.utils.device import get_device
-from src.enums.types import SpecialTokensEnum, ModelTypeEnum
+from src.enums.types import SpecialTokensEnum
 
 BASE_DIR = Path(__file__).parent.parent.parent
 UI_DIR = Path(__file__).parent  # <-- src/ui/
@@ -91,9 +91,7 @@ def generate(req: GenerateRequest):
         case _:
             raise ValueError("Invalid level")
 
-    generated_texts = generate_model(
-        model, tokenizer, device, prompts=[prompt], length=200, model_type=ModelTypeEnum.TRANSFORMER
-    )
+    generated_texts = generate_model(model, tokenizer, device, prompts=[prompt], length=200)
     raw_output = generated_texts[0]
     if level == 2:
         review = extract_review(prompt, raw_output)

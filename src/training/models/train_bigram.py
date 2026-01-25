@@ -1,11 +1,12 @@
 import argparse
 import torch
+import torch.nn.functional as F
+import wandb
 
 from src.config import load_config
 from src.config.config import Config, BigramModelConfig, BigramTrainingConfig
 from src.enums import BigramCheckpointEnum, ModelTypeEnum, DataSplitEnum
 from src.models.bigram.bigram import Bigram
-from src.models.embeddings.token_embedding import TokenEmbedding
 from src.utils.device import get_device
 from src.training.trainer import train_loop
 from src.training.train_utils import (
@@ -16,11 +17,20 @@ from src.training.train_utils import (
 )
 from dataclasses import asdict
 
+from src.utils.wandb_transfomer_config_override import apply_wandb_overrides
 
-def create_forward_pass(token_embedding):
+
+def create_forward_pass():
     def forward_pass(model, x, y):
-        embedding = token_embedding(x)
-        _, loss = model(embedding, y)
+        logits = model(x)  # [batch_size, seq_len, vocab_size]
+
+        # Shift: logits[:, :-1] predict targets[:, 1:]
+        logits_shifted = logits[:, :-1, :]  # [batch_size, seq_len-1, vocab_size]
+        targets_shifted = y[:, 1:]  # [batch_size, seq_len-1]
+
+        logits_flat = logits_shifted.reshape(-1, logits_shifted.size(-1))
+        targets_flat = targets_shifted.reshape(-1)
+        loss = F.cross_entropy(logits_flat, targets_flat)
         return loss
 
     return forward_pass
@@ -32,6 +42,18 @@ def main(config: Config):
     model_config: BigramModelConfig = config.model
     train_config: BigramTrainingConfig = config.training
 
+    if wandb.run is None:
+        wandb.init(
+            project="film-critic-lm",
+            entity="the-trufiti-group",
+            config=asdict(config),
+        )
+
+    if wandb.config.get("config"):
+        config = load_config(wandb.config.config)
+        config = apply_wandb_overrides(config)
+        wandb.config.update(asdict(config), allow_val_change=True)
+
     device = get_device()
 
     print(f"Using device: {device}")
@@ -39,23 +61,21 @@ def main(config: Config):
 
     tokenizer, vocab_size, train_data, val_data = load_and_prepare_data(config)
 
-    token_embedding = TokenEmbedding(vocab_size, model_config.d_model, scale=False).to(device)
     model = Bigram(vocab_size, model_config.d_model).to(device)
 
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Model parameters: {total_params:,}\n".replace(",", "."))
 
-    print_training_statistics(
-        config.training.batch_size, config.training.seq_len, config.training.max_iters, train_data.numel()
-    )
+    print_training_statistics(train_config.batch_size, train_config.seq_len, train_config.max_iters, train_data.numel())
 
     optimizer = torch.optim.AdamW(
-        list(model.parameters()) + list(token_embedding.parameters()),
-        lr=config.training.learning_rate,
+        model.parameters(),
+        lr=train_config.learning_rate,
     )
 
-    forward_pass = create_forward_pass(token_embedding)
+    forward_pass = create_forward_pass()
     data = {DataSplitEnum.TRAIN: train_data, DataSplitEnum.VAL: val_data}
+
     metrics = train_loop(
         model,
         forward_pass,
@@ -67,11 +87,11 @@ def main(config: Config):
         train_config.eval_interval,
         train_config.eval_iters,
         device,
+        wandb,
     )
 
     checkpoint = {
         BigramCheckpointEnum.MODEL: model.state_dict(),
-        BigramCheckpointEnum.TOKEN_EMBEDDING: token_embedding.state_dict(),
         BigramCheckpointEnum.VOCAB_SIZE: vocab_size,
         BigramCheckpointEnum.CONFIG: asdict(config),
         BigramCheckpointEnum.TOKENIZER: tokenizer,
@@ -79,6 +99,8 @@ def main(config: Config):
 
     model_save_path = save_model_checkpoint(config, total_params, checkpoint)
     save_metrics(metrics, model_save_path)
+
+    wandb.finish()
 
 
 if __name__ == "__main__":

@@ -6,9 +6,7 @@ from tokenizers import Tokenizer
 from src.enums.types import SpecialTokensEnum, ModelTypeEnum
 from src.utils.device import get_device
 from src.generation.generate_utils import (
-    prepare_prompts,
     decode_generated,
-    extract_completions,
     print_generation_header,
     print_results,
     load_model_checkpoint,
@@ -17,14 +15,39 @@ from src.generation.generate_utils import (
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
+def prepare_prompts(
+    prompts: list[str],
+    tokenizer: Tokenizer,
+    device: torch.device,
+) -> torch.Tensor:
+    if not prompts:
+        return torch.empty(0, dtype=torch.long, device=device)
+
+    bos_id = tokenizer.token_to_id(SpecialTokensEnum.BOS)
+    pad_id = tokenizer.token_to_id(SpecialTokensEnum.PAD)
+
+    encoded = []
+    for p in prompts:
+        if p:
+            encoded.append(tokenizer.encode(p).ids)
+        else:
+            encoded.append([bos_id])
+
+    max_prompt_len = max(len(e) for e in encoded)
+    padded = []
+    for e in encoded:
+        padding = [pad_id] * (max_prompt_len - len(e))
+        padded.append(padding + e)
+
+    return torch.tensor(padded, dtype=torch.long, device=device)
+
+
 def generate(
     model,
     tokenizer: Tokenizer,
     device: torch.device,
     prompts: list[str],
     length: int,
-    model_type: ModelTypeEnum,
-    token_embedding=None,
 ) -> list[str]:
     if not prompts:
         return []
@@ -32,15 +55,21 @@ def generate(
     eos_id = tokenizer.token_to_id(SpecialTokensEnum.EOS)
     idx = prepare_prompts(prompts, tokenizer, device)
 
-    match model_type:
-        case ModelTypeEnum.BIGRAM:
-            generated = model.generate(token_embedding, idx, eos_id, length)
-        case ModelTypeEnum.GRU | ModelTypeEnum.TRANSFORMER:
-            generated = model.generate(idx, length, eos_id)
-        case _:
-            raise ValueError(f"Unknown model type: {model_type}")
-
+    generated = model.generate(index=idx, eos_token_id=eos_id, max_new_tokens=length)
     return decode_generated(generated, tokenizer, eos_id)
+
+
+def extract_completions(
+    full_texts: list[str],
+    prompts: list[str],
+) -> list[str]:
+    completions = []
+    for text, prompt in zip(full_texts, prompts, strict=False):
+        if prompt and text.startswith(prompt):
+            completions.append(text[len(prompt) :])
+        else:
+            completions.append(text)
+    return completions
 
 
 def generate_completions(
@@ -49,10 +78,8 @@ def generate_completions(
     device: torch.device,
     prompts: list[str],
     length: int,
-    model_type: ModelTypeEnum,
-    token_embedding=None,
 ) -> list[str]:
-    full_texts = generate(model, tokenizer, device, prompts, length, model_type, token_embedding)
+    full_texts = generate(model, tokenizer, device, prompts, length)
     return extract_completions(full_texts, prompts)
 
 
@@ -77,19 +104,11 @@ if __name__ == "__main__":
     }
     model_type = model_type_map[args.type]
 
-    # returns different things based on the model type
-    model_data = load_model_checkpoint(model_path, device, model_type)
+    model, tokenizer, config = load_model_checkpoint(model_path, device, model_type)
 
     print_generation_header(args.prompt)
 
     prompts = [args.prompt] * args.num
-
-    match model_type:
-        case ModelTypeEnum.BIGRAM:
-            model, token_embedding, tokenizer, config = model_data
-            results = generate(model, tokenizer, device, prompts, args.length, model_type, token_embedding)
-        case ModelTypeEnum.GRU | ModelTypeEnum.TRANSFORMER:
-            model, tokenizer, config = model_data
-            results = generate(model, tokenizer, device, prompts, args.length, model_type)
+    results = generate(model, tokenizer, device, prompts, args.length)
 
     print_results(results, args.num)

@@ -36,7 +36,7 @@ def save_metrics(metrics: TrainingMetrics, model_save_path: Path):
 def print_training_statistics(batch_size: int, seq_len: int, max_iters: int, train_data_len: int):
     tokens_per_iter = batch_size * seq_len
     iters_per_epoch = train_data_len // tokens_per_iter
-    print(f"/nTraining tokens: {train_data_len:,}".replace(",", "."))
+    print(f"Training tokens: {train_data_len:,}".replace(",", "."))
     print(f"Tokens per iteration: {tokens_per_iter:,} (batch_size={batch_size} × seq_len={seq_len})".replace(",", "."))
     print(f"Iterations per epoch: {iters_per_epoch:,}".replace(",", "."))
     print(f"Total epochs: {max_iters / iters_per_epoch:.2f}\n")
