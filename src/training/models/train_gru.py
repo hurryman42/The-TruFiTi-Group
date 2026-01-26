@@ -21,7 +21,7 @@ from src.training.train_utils import (
 
 def create_forward_pass():
     def forward_pass(model, x, y):
-        logits, _ = model(x)
+        logits = model(x)
         loss = torch.nn.functional.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
         return loss
 
