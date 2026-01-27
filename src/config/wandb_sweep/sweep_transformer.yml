@@ -15,16 +15,19 @@ parameters:
     values: [64, 128]
 
   model.num_blocks:
-    values: [2, 4, 6]
+    values: [4, 6]
 
   model.num_heads:
     values: [4, 8]
 
-  model.ff_hidden_dim:
-    values: [64, 128, 256]
+#  model.seq_len:
+#    values: [128, 256]
 
-  model.seq_len:
+  model.ff_hidden_dim:
     values: [128, 256]
+
+  model.max_iter:
+    values: [8000]
 
 #  model.dropout:
 #    distribution: uniform
@@ -50,5 +53,5 @@ parameters:
 early_terminate:
   type: hyperband
   min_iter: 500
-  max_iter: 10000
+  max_iter: 5000
   eta: 3
