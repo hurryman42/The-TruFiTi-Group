@@ -37,12 +37,20 @@ class GRU(nn.Module):
         embeds = self.embedding(x)  # [batch_size, seq_len, input_size]
         embeds = self.embed_dropout(embeds)
 
-        output, hidden = self.gru(embeds, hidden)  # output: [batch_size, seq_len, hidden_size]
+        output, _ = self.gru(embeds, hidden)  # output: [batch_size, seq_len, hidden_size]
 
         output = self.layer_norm(output)
         logits = self.fc_out(output)  # [batch_size, seq_len, vocab_size]
 
         return logits
+
+    def forward_with_hidden(self, x: torch.Tensor, hidden: torch.Tensor | None = None):
+        embeds = self.embedding(x)
+        embeds = self.embed_dropout(embeds)
+        output, hidden = self.gru(embeds, hidden)
+        output = self.layer_norm(output)
+        logits = self.fc_out(output)
+        return logits, hidden
 
     @torch.no_grad()
     def generate(
@@ -59,7 +67,7 @@ class GRU(nn.Module):
 
         is_generating = torch.ones(batch_size, dtype=torch.bool, device=device)
 
-        logits, hidden = self(generated)
+        logits, hidden = self.forward_with_hidden(generated)
 
         for _ in range(max_new_tokens):
             next_logits = logits[:, -1, :]  # [batch_size, vocab_size]
