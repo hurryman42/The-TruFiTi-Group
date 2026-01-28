@@ -84,3 +84,8 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+filterwarnings = [
+    "ignore:.*SwigPyPacked has no __module__ attribute:DeprecationWarning",
+    "ignore:.*SwigPyObject has no __module__ attribute:DeprecationWarning",
+    "ignore:.*swigvarlink has no __module__ attribute:DeprecationWarning"
+]
