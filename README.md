@@ -22,9 +22,9 @@ FilmCriticLM is a language model-based system developed to automatically generat
 - Input: Film summary
 - Output: Coherent review that fits the film content.
 
-<u>Level 3:</u> Generate a review from a summary and bullet points for content.
-- Input: Film summary + bullet points (key aspects of review)
-- Output: Fully formulated review that fits the film content and elaborates on the given bullet points.
+~~Level 3: Generate a review from a summary and bullet points for content.~~
+~~- Input: Film summary + bullet points (key aspects of review)~~
+~~- Output: Fully formulated review that fits the film content and elaborates on the given bullet points.~~
 
 <u>Use case:</u> Quick creation of readable, high-quality film reviews - helpful when in a rush or when struggling to articulate thoughts
 
@@ -49,8 +49,8 @@ This project uses a `Makefile` to automate downloading the Letterboxd full dump 
   - use WSL, Git Bash, or another UNIX-like terminal with `make`, `curl`, and `python3`
   - alternatively, see scripts under the `windows/` folder (if provided)
 
-### Download data and run filter
-`make`
+### Download data and run pre-filter
+`make data`
 
 This will:
 1. Check if `curl` and `python3` are installed.
@@ -60,22 +60,29 @@ This will:
 #### Troubleshooting
 If you see errors about `curl` or `python3` missing, please install them using your package manager (e.g., `sudo apt install curl python3` on Ubuntu, or `brew install curl python` on macOS with Homebrew).
 
-### Just Data Filter
-`make run-filter`
+### Data Processing Pipeline
+0. `make download-data`
+  - optionally: `make verify-download`
+1. `pre-filter`
+2. `export OMDB_API_KEY=[YOUR_ACTUAL_KEY]`, then `make omdb`
+3. `make mid-filter`
+4. `make llm`
+  - optionally: `make split` before to have splits that can be processed separately, can be merged afterwards with `make merge`
+5. `make post-filter`
 
 ### Training
 - before first training, do either `wandb login` or `wandb offline`
-- `uv run -m src.training.tokenizer.train_bpe_hf_tokenizer --dataset [DATASET] --l [1|2]`
+- train tokenizer: `uv run -m src.training.tokenizer.train_bpe_hf_tokenizer --dataset [DATASET] --l [1|2]`
   - standard dataset is `letterboxd_filtered.jsonl`
   - `l` or `level` for level (see above)
-- `uv run -m src.training.models.train_transformer [CONFIG]` to train transformer
-- `uv run -m src.training.models.train_gru [CONFIG]` to train GRU
-- `uv run -m src.training.models.train_bigram [CONFIG]` to train bigram
+- train transformer: `uv run -m src.training.models.train_transformer [CONFIG]`
+- train GRU: `uv run -m src.training.models.train_gru [CONFIG]`
+- train bigram: `uv run -m src.training.models.train_bigram [CONFIG]`
   - for available `[CONFIG]` files, check out `/src/config/`, use file name without the `.yml`-ending
-    - e.g. `transformer_default`
+    - e.g. `transformer_default.yml`
 
 ### Generation using trained model
-`uv run -m src.generation.generate --type [bigram, gru, transformer] --model [MODEL] --prompt "good movie because"`
+`uv run -m src.generation.generate --type [bigram | gru | transformer] --model [MODEL] --prompt "good movie because"`
 
 ### Demo
 `uv run -m src.ui.server` then open `http://0.0.0.0:8000` in a web browser
