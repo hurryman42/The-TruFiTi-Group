@@ -14,15 +14,15 @@ FilmCriticLM is a language model-based system developed to automatically generat
 
 ## Features & Development Stages
 
-<u>Level 1:</u> Just generate a film review. (decoder-only transformer)
+**Level 1**: Just generate a film review. (decoder-only transformer)
 - Input: Film summary
 - Output: A text that sounds like a review / could be a review to any film. (input is basically ignored)
 
-<u>Level 2: </u> Generate a review based on the given summary. (also decoder-only transformer, but also other architectures)
+**Level 2**: </u> Generate a review based on the given summary. (also decoder-only transformer, but also other architectures)
 - Input: Film summary
 - Output: Coherent review that fits the film content.
 
-~~Level 3: Generate a review from a summary and bullet points for content.~~
+~~**Level 3**: Generate a review from a summary and bullet points for content.~~
 ~~- Input: Film summary + bullet points (key aspects of review)~~
 ~~- Output: Fully formulated review that fits the film content and elaborates on the given bullet points.~~
 
@@ -61,14 +61,14 @@ This will:
 If you see errors about `curl` or `python3` missing, please install them using your package manager (e.g., `sudo apt install curl python3` on Ubuntu, or `brew install curl python` on macOS with Homebrew).
 
 ### Data Processing Pipeline
-0. `make download-data`
+- `make download-data`
   - optionally: `make verify-download`
-1. `pre-filter`
-2. `export OMDB_API_KEY=[YOUR_ACTUAL_KEY]`, then `make omdb`
-3. `make mid-filter`
-4. `make llm`
+- `pre-filter`
+- `export OMDB_API_KEY=[YOUR_ACTUAL_KEY]`, then `make omdb`
+- `make mid-filter`
+- `make llm`
   - optionally: `make split` before to have splits that can be processed separately, can be merged afterwards with `make merge`
-5. `make post-filter`
+- `make post-filter`
 
 ### Training
 - before first training, do either `wandb login` or `wandb offline`
