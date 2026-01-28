@@ -29,7 +29,6 @@ class LLMAsJudge(BaseEvaluationMetric):
         generated: list[str],
         references: list[list[str]] | None = None,
     ) -> MetricResult:
-
         system_prompt = """
         You are a movie critic tasked with evaluating reviews written by an AI.
         """
@@ -54,6 +53,5 @@ class LLMAsJudge(BaseEvaluationMetric):
             return MetricResult(
                 name=self.name,
                 score=self._count_confirmations(str(result)),
-                details={
-                },
+                details={},
             )
