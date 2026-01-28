@@ -1,3 +1,9 @@
+import os
+import pytest
+
+if os.getenv("GITHUB_ACTIONS") == "true":
+    pytest.skip("Skipped in CI (requires HF downloads)", allow_module_level=True)
+
 from src.evaluation.toxicity import Toxicity
 
 
