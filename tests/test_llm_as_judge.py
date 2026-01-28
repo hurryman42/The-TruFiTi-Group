@@ -2,7 +2,7 @@ from src.evaluation.llm_as_judge import LLMAsJudge
 
 
 def test_mauve_metric():
-    judge = LLMAsJudge("llama-3.2")
+    judge = LLMAsJudge("llama-3.1-8b")
 
     result1 = judge.compute("It’s literally so easy to make friends when you’re the dude with the good kush")
 

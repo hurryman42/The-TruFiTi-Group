@@ -5,14 +5,16 @@ from src.evaluation.base_evaluation_metric import BaseEvaluationMetric, MetricRe
 
 class LLMAsJudge(BaseEvaluationMetric):
     def __init__(self, model: str):
-        if model not in ["gpt-oss", "llama-3.2"]:
+        if model not in ["gpt-oss", "llama-3.1-8b", "llama-3.2-1b"]:
             raise ValueError(f"Unsupported model: {model}")
         self.model = model
 
         match model:
             case "gpt-oss":
                 self._model_handle = "openai/gpt-oss-20b"
-            case "llama-3.2":
+            case "llama-3.1-8b":
+                self._model_handle = "meta-llama-3.1-8b-instruct"
+            case "llama-3.2-1b":
                 self._model_handle = "llama-3.2-1b-instruct"
 
     @property
