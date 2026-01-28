@@ -1,6 +1,9 @@
+import pytest
+
 from src.evaluation.llm_as_judge import LLMAsJudge
 
 
+@pytest.mark.skip(reason="Requires external setup (LM Studio), skipped by default")
 def test_mauve_metric():
     judge = LLMAsJudge("llama-3.1-8b")
 
