@@ -1,0 +1,28 @@
+model:
+  type: transformer
+  d_model: 64
+  num_heads: 4
+  num_blocks: 4
+  seq_len: 128
+  dropout: 0.1
+  use_rope: True
+
+tokenizer:
+  type: bpe_hugging_face
+
+training:
+  batch_size: 64
+  learning_rate: 3e-4
+  weight_decay: 0.01
+  max_iters: 25000
+  eval_interval: 500
+  eval_iters: 50
+  warmup_iters: 500
+
+data:
+  train_size: 0.8
+  val_size: 0.1
+  test_size: 0.1
+  file: letterboxd_filtered_llm_filtered.jsonl
+  level: 1
+  seed: 42
