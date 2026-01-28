@@ -34,14 +34,15 @@ def main(config: Config):
     model_config: TransformerModelConfig = config.model
     train_config: TransformerTrainingConfig = config.training
 
-    wandb.init(
-        project="film-critic-lm",
-        entity="the-trufiti-group",
-        config=asdict(config),
-    )
+    if wandb.run is None:
+        wandb.init(
+            project="film-critic-lm",
+            entity="the-trufiti-group",
+            config=asdict(config),
+        )
 
     if wandb.config.get("config"):
-        config = Config.from_yaml(wandb.config.config)
+        config = load_config(wandb.config.config)
         config = apply_wandb_overrides(config)
         wandb.config.update(asdict(config), allow_val_change=True)
 

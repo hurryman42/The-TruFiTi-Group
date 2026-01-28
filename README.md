@@ -67,7 +67,7 @@ If you see errors about `curl` or `python3` missing, please install them using y
 - `uv run -m src.training.tokenizer.train_bpe_hf_tokenizer --dataset [DATASET] --l [1|2]`
   - standard dataset is `letterboxd_filtered.jsonl`
   - `l` or `level` for level (see above)
-- `uv run -m src.training.models.train_transformer --config [CONFIG]`
+- `uv run -m src.training.models.train_transformer [CONFIG]`
   - for available `[CONFIG]` files, check out `/src/config/`, use file name without the `.yml`-ending
     - e.g. `transformer_default`
 
@@ -75,7 +75,7 @@ If you see errors about `curl` or `python3` missing, please install them using y
 `uv run -m src.generation.generate --type [bigram, gru, transformer] --model [MODEL] --prompt "good movie because"`
 
 ### Demo
-`uv run -m src.ui.server --model [MODEL] --l [1|2]`
+`uv run -m src.ui.server`
 
 ### Evaluation
 `uv run -m src.evaluation.evaluate_transformer --model [MODEL]`
@@ -96,4 +96,5 @@ Master Project: Efficient Methods in Machine Learning (2025/26)
 ## Contact
 
 For questions, please contact the project team via the University of Hamburg.
+
 

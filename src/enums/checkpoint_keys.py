@@ -11,7 +11,6 @@ class TransformerCheckpointEnum(StrEnum):
 
 class BigramCheckpointEnum(StrEnum):
     MODEL = "model"
-    TOKEN_EMBEDDING = "token_embedding"
     POS_ENCODING = "pos_encoding"
     VOCAB_SIZE = "vocab_size"
     CONFIG = "config"

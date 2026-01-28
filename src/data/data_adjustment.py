@@ -1,26 +1,26 @@
 import re
-
 import language_tool_python.utils
-from spellchecker import SpellChecker
 import language_tool_python as lang_tool
+from spellchecker import SpellChecker
+from deprecated import deprecated
 
 
+@deprecated(reason="Not part of the data processing pipeline.")
 class ReviewAdjuster:
     def __init__(self):
         self.spell = SpellChecker(distance=1)
-        self.sensitivity = 0.9
         self.word_pattern = re.compile(r"\b[a-zA-Z]+\b")
         self.tool = lang_tool.LanguageTool("en-US")
         self.tool.enabled_rules_only = True
         self.tool.enabled_categories = {"GRAMMAR", "COLLOCATIONS", "PUNCTUATION", "TYPOGRAPHY"}
 
-    def is_spelling_adequate(self, review_text: str) -> bool:
+    def is_spelling_adequate(self, review_text: str, sensitivity=0.95) -> bool:
         words = set(self.word_pattern.findall(review_text))
         misspelled = self.spell.unknown(words)
 
         if len(misspelled) == len(words):
             return False
-        elif 1.0 - (len(misspelled) / len(words)) >= self.sensitivity:
+        elif 1.0 - (len(misspelled) / len(words)) >= sensitivity:
             return True
         else:
             return False
