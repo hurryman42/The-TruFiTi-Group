@@ -7,7 +7,7 @@ What we found was mostly datasets that were intended for classification and a th
 Other datasets had too many information about the film, like the dataset that we ended up with \cite{dataset}, which included several information for all films on letterboxd.
 These information are \texttt{url}, \texttt{title}, \texttt{year}, \texttt{directors}, \texttt{genres}, \texttt{cast}, \texttt{synopsis}, \texttt{rating}, \texttt{poster\_url}, and a maximum of 10 \texttt{reviews} each consisting of \texttt{username}, \texttt{review\_text}, and \texttt{likes}.
 Of these we only need \texttt{title} and \texttt{year} to identify the film, the \texttt{synopsis} for context about the content of the film, and the \texttt{review\_text}s.
-\\
+
 Next, we analyzed this data which contains out of 847209 films and 2156477 reviews.
 However, all these reviews were only linked to 366600 (43.27\%) of the films.
 Of these films, 349753 (95.4\%) have a synopsis (of at least length 1) and the mean length is $\mu=44.8$ words.
@@ -16,17 +16,25 @@ Using the lingua language detector \cite{lingua}, we found that 73.83\% of the r
 Running PySpellChecker \cite{PySpellChecker} on all reviews showed that 33.58\% of them have 0\% detected misspellings, and 52.76\% have less than 6\% detected misspellings.
 With the EmojiPython package \cite{EmojiPython}, we counted the number of emojis per review and found that 96.08\% of all reviews have no emojis at all.
 We used unicodedata \cite{unicodedata} to find both the number of non-latin characters per review (97\% of all reviews have no non-latin characterss at all) and the number of weird characters (So/Sm/Mn/Cf/Co) per review (93.88\% of all reviews have no weird characters at all).
-The analysis results are visualized in Figure \ref{dataset_analysis}.
-\\
-\centerline{\includegraphics[scale=0.25]{images/dataset_analysis.pdf}} \label{dataset_analysis}
+The analysis results are visualized in Figure \ref{fig:dataset_analysis}.
+
+\begin{figure}
+  \includegraphics[width=\textwidth]{images/dataset_analysis.pdf}
+  \caption{\textbf{Dataset Analysis}: Word Counts (Synopses \& Reviews), Language Detection, Ratios of Misspelled, Emojies, Non-Latin Characters, \& Weird Characters}
+  \label{fig:dataset_analysis}
+\end{figure}
 
 
 \subsection{Preprocessing} \label{subsec:preprocessing}
 The preprocessing pipeline contains five stages which are depicted in Figure \ref{data_pipeline}.
 The stages are the pre-filter, plots from OMDb, the mid-filter, review editing with LLM, and the post-filter.
 While the three filter stages are used to remove reviews or entire films and therefore skrink the dataset, the other two stages expand it by adding information to the synopses and reviews.
-\\
-\centerline{\includegraphics[scale=0.95]{images/data_pipeline.pdf}} \label{data_pipeline}
+
+\begin{figure}
+  \includegraphics[width=\textwidth]{images/data_pipeline.pdf}
+  \caption{The raw data is preprocessed in a pipeline consisting of five stages.}
+  \label{data_pipeline}
+\end{figure}
 
 
 \subsubsection*{Pre-filter}
@@ -47,9 +55,12 @@ Then, based on the results of our dataset analysis, the pre-filter filters out r
   \item are detected not to be written in English
   \item have more than 5\% of its words be detected as misspelled
 \end{itemize}
+For the length borders we started with $\mu-\sigma>17$ for the lower border and the median (141) as the upper border.
+However, this way we filtered out too many reviews, which is why we then incremented both borders until we got enough reviews after filtering.
+
 Since reviews are already removed once they do not meet one of these criteria and checking the criteria takes varying amounts of time, the order in which these checks are conducted is important.
 Specifically the spellcheck and language detection takes long, which is why they are run last.
-\\
+
 The pre-filter reduces the dataset from 847209 films and 2156477 reviews down to 239330 (28.25\%) films and 728258 (33.77\%) reviews.
 
 
@@ -67,10 +78,10 @@ The mid-filter is mainly used to decide between the newly added plot from OMDb a
 If there is an OMDb plot for the film, it is almost always kept.  
 Only when the synopsis is longer than the OMDb plot and the start the same, the synopsis is chosen.
 If there is neither an OMDb plot nor a synopsis, the film is removed from the dataset.
-\\
+
 After this, we once again look at the length of the resulting synopsis/plot and remove films where this length is shorter than 20 words.
 Furthermore, we use the additional metadata that we got from OMDb to remove small films that have less than 100 IMDb votes as reviews are unlikely to be good when the film has not gotten much attention overall. 
-\\
+
 All in all, the mid-filter reduces the dataset from 239330 films and 728258 reviews down to 236414 (98,78\%) films and 723885 (99.4\%) reviews.
 
 
@@ -99,3 +110,5 @@ That way the post-filter reduces the dataset from 236414 films and 560627 review
 
 
 \subsection{Tokenization} \label{subsec:tokenization}
+To transform the raw text data into processable tokens, we used a byte-pair encoding (BPE) transformer.
+We implemented our own version of it in Python, but due to massive performance issues we ended up using the implementation from Hugging Face's `tokenizers` library \cite{hf-tokenizers}.

@@ -1,89 +1,137 @@
 \section{Results} \label{sec:results}
-Notizen, um das Kapitel zu schreiben:
-\\
-Aufgrund dass unsere Daten recht schlecht waren und wir die erst in der letzten Woche bereinigt haben, nachdem wir viele verschiedene Methoden ausprobiert haben, hatten wir nur noch begrenzt Zeit zu experimentieren.
-Deswegen ist der Output von den Modellen allgemein immer noch nicht besonders gut, was aber auch an der Grösse liegen kann.
+%Aufgrund dass unsere Daten recht schlecht waren und wir die erst in der letzten Woche bereinigt haben, nachdem wir viele verschiedene Methoden ausprobiert haben, hatten wir nur noch begrenzt Zeit zu experimentieren.
+%Deswegen ist der Output von den Modellen allgemein immer noch nicht besonders gut, was aber auch an der Grösse liegen kann.
 
+%\begin{itemize}
+%    \item Auch nochmal das originale Dataset gegen das verbesserte testen.
+%    \item Tokenizer vocab size vergleichen 
+%\end{itemize}
+
+\subsection*{Architectures \& Positional Embeddings}
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{lcccccccc}
+        \hline
+        Model                                        & Val Loss & Perplexity & Distinct-1 & Distinct-2 &   BERT & ROUGE-1 & ROUGE-2\\
+        \hline
+        Bigram 0.5M                                  &    6.125 &   1869.72  &     0.6549 &     0.9900 & 0.8153 &  0.1251 & 0.0141 \\
+        GRU 1.9M                                     &    4.079 &            &            &            &        &         &  \\
+        \makecell[l]{Transformer\\sinusoidalPE 0.7M} &    4.170 &      65.43 &     0.5097 &     0.9155 & 0.8264 &  0.1346 & 0.0165 \\
+        \hline
+    \end{tabular}
+    \caption{Evaluation metrics for different model architectures (all L2).}
+\end{table}
 \begin{itemize}
-    \item Grundidee: Bei allen wichtigen Experimenten nicht nur Trainings- und Validation-Loss betrachten,
-    sondern zusätzlich Evaluationsmetriken berichten.
-    \item Ziel: Bessere Vergleichbarkeit und realistischere Einschätzung der Modellqualität.
-    \item Tokenizer vocab size vergleichen 
-\end{itemize}
-
-
-\subsection*{Baselines}
-\begin{itemize}
-    \item Bigram-Modell als einfache Baseline.
-    \item Transformer-Baseline mit sinusoidalem Positional Embedding.
-\end{itemize}
-
-
-\subsection*{Vergleich Positional Embeddings}
-\begin{itemize}
-    \item Vergleich zweier Transformer-Varianten:
+    \item compare:
     \begin{itemize}
-        \item Transformer mit sinusoidalem Positional Embedding
-        \item Transformer mit RoPE (Rotary Positional Embedding)
+        \item bigram with sinusoidal positional embedding
+        \item bigram with RoPE
+        \item GRU with sinusoidal positional embedding
+        \item GRU with RoPE
+        \item transformer with sinusoidal positional embedding
+        \item transformer with RoPE (Rotary Positional Embedding)
     \end{itemize}
-    \item Ergebnis: RoPE liefert bessere Ergebnisse.
-    \item Konsequenz: RoPE wird in allen weiteren Experimenten verwendet.
+    \item results: transformer with RoPE yields the best results
+    \item therefore we will use transformer with RoPE in the further experiments
 \end{itemize}
 
 
-\subsection*{Gewichtsinitialisierung}
+
+\subsection*{Weight Initialization} \label{subsec:weight-init}
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{lcccccccc}
+        \hline
+        Model                                      & Val Loss & Perplexity & Distinct-1 & Distinct-2 &   BERT & ROUGE-1 & ROUGE-2\\
+        \hline
+        \makecell[l]{RoPE FFN4x\\ L2 0.7M no init} &    4.277 &      72.44 &     0.5359 &     0.9335 & 0.8254 &  0.1328 & 0.0176 \\
+        \vspace{1sp}\\
+        \makecell[l]{RoPE FFN4x\\ L2 0.7M init}    &    4.047 &      57.88 &     0.5373 &     0.9234 & 0.8258 &  0.1330 & 0.0163 \\
+        \hline
+    \end{tabular}
+    \caption{Evaluation metrics for transformer with and without weight initialization.}
+\end{table}
 \begin{itemize}
-    \item Vergleich von Modellen:
+    \item Compare:
     \begin{itemize}
-        \item mit Gewichtsinitialisierung
-        \item ohne Gewichtsinitialisierung
+        \item with weight initialization
+        \item without weight initialization
     \end{itemize}
-    \item Durchführung für Transformer mit Sinusoidal Embedding und mit RoPE.
-    \item Ergebnis: Gewichtsinitialisierung verbessert die Resultate.
-    \item Konsequenz: Gewichtsinitialisierung wird überall verwendet.
+    \item for transformer with sinusoidal positional embedding \& with RoPE
+    \item weight initialization improves results
+    \item therefore we will weight initialization from now on
 \end{itemize}
 
 
-\subsection*{Feedforward-Dimension}
+
+\subsection*{Feedforward Network Dimensions} \label{subsec:ffn}
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{lcccccccc}
+        \hline
+        Model              & Val Loss & Perplexity & Distinct-1 & Distinct-2 &   BERT & ROUGE-1 & ROUGE-2\\
+        \hline
+        RoPE FFN1x L2 0.6M &    4.102 &      61.30 &     0.5361 &     0.9274 & 0.8270 &  0.1332 & 0.0168 \\
+        RoPE FFN2x L2 0.6M &    4.089 &      59.39 &     0.5358 &     0.9251 & 0.8268 &  0.1350 & 0.0166 \\
+        RoPE FFN4x L2 0.7M &    4.047 &      57.88 &     0.5373 &     0.9234 & 0.8258 &  0.1330 & 0.0163 \\
+        \hline
+    \end{tabular}
+    \caption{Evaluation metrics for transformer with different feedforward network dimensions.}
+\end{table}
 \begin{itemize}
-    \item Untersuchung des Einflusses der Feedforward-Hidden-Dimension.
-    \item Vergleich folgender Varianten:
+    \item analyzing the influence of the hidden dimension in the feedforward network
+    \item compare:
     \begin{itemize}
-        \item $4 \times$ Embedding-Dimension (typischer Standard)
-        \item $2 \times$ Embedding-Dimension
-        \item $1 \times$ Embedding-Dimension
+        \item $4 \times$ embedding dimension (typical standard)
+        \item $2 \times$ embedding dimension
+        \item $1 \times$ embedding dimension
     \end{itemize}
 \end{itemize}
 
 
-\subsection*{Hyperparameter-Sweep (Architektur)}
-\begin{itemize}
-    \item Sweep über harte Modellparameter:
-    \begin{itemize}
-        \item Embedding-Dimension
-        \item Anzahl der Blöcke (Layer)
-        \item Anzahl der Attention-Köpfe
-        \item Sequenzlänge
-        \item Feedforward-Hidden-Dimension
-    \end{itemize}
-    \item Aus Zeitgründen keine Anpassung von Trainingsparametern.
-    \item Nicht variiert:
-    \begin{itemize}
-        \item Learning Rate
-        \item Batch Size
-        \item Dropout
-    \end{itemize}
-\end{itemize}
 
+\subsection*{Hyperparameters} \label{subsec:params}
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{lcccccccc}
+        \hline
+        Model              & Val Loss & Perplexity & Distinct-1 & Distinct-2 &   BERT & ROUGE-1 & ROUGE-2\\
+        \hline
+        RoPE FFN4x L1 0.7M &    3.941 &     103.11 &     0.5282 &     0.9302 & 0.8276 &  0.1324 & 0.0179 \\
+        RoPE FFN4x L1 8.4M &    3.543 &      69.61 &     0.5315 &     0.9392 & 0.8295 &  0.1353 & 0.0166 \\
+        RoPE FFN4x L2 0.7M &    4.047 &      57.88 &     0.5373 &     0.9234 & 0.8258 &  0.1330 & 0.0163 \\
+        RoPE FFN4x L2 8.4M &    3.589 &      36.05 &     0.5173 &     0.9166 & 0.8279 &  0.1353 & 0.0157 \\
+        \hline
+    \end{tabular}
+    \caption{Evaluation metrics for different levels and hyperparameters.}
+\end{table}
 
-\subsection*{GRU-Experimente}
-\begin{itemize}
-    \item Zusätzlich Training eines GRU-Modells.
-    \item Ergebnis: GRU liefert insgesamt schlechtere Resultate als die Transformer-Modelle.
-    \item Wir können zusätzlich einen Sweep für die GRU durchführen:
-    \begin{itemize}
-        \item Input-Dimension
-        \item Hidden-Dimension
-        \item Anzahl der Layer
-    \end{itemize}
-\end{itemize}
+%\begin{itemize}
+%    \item Sweep über harte Modellparameter:
+%    \begin{itemize}
+%        \item Embedding-Dimension
+%        \item Anzahl der Blöcke (Layer)
+%        \item Anzahl der Attention-Köpfe
+%        \item Sequenzlänge
+%        \item Feedforward-Hidden-Dimension
+%    \end{itemize}
+%    \item Aus Zeitgründen keine Anpassung von Trainingsparametern.
+%    \item Nicht variiert:
+%    \begin{itemize}
+%        \item Learning Rate
+%        \item Batch Size
+%        \item Dropout
+%    \end{itemize}
+%\end{itemize}
+
+%\subsection*{GRU-Experimente}
+%\begin{itemize}
+%    \item Zusätzlich Training eines GRU-Modells.
+%    \item Ergebnis: GRU liefert insgesamt schlechtere Resultate als die Transformer-Modelle.
+%    \item Wir können zusätzlich einen Sweep für die GRU durchführen:
+%    \begin{itemize}
+%        \item Input-Dimension
+%        \item Hidden-Dimension
+%        \item Anzahl der Layer
+%    \end{itemize}
+%\end{itemize}
