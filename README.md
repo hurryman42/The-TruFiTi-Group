@@ -82,13 +82,19 @@ If you see errors about `curl` or `python3` missing, please install them using y
     - e.g. `transformer_default.yml`
 
 ### Generation using trained model
-`uv run -m src.generation.generate --type [bigram | gru | transformer] --model [MODEL] --prompt "good movie because"`
+`uv run -m src.generation.generate --type [bigram|gru|transformer] --model [MODEL] --prompt "good movie because"`
 
 ### Demo
 `uv run -m src.ui.server` then open `http://0.0.0.0:8000` in a web browser
 
 ### Evaluation
-`uv run -m src.evaluation.evaluate_transformer --model [MODEL]`
+`uv run -m src.evaluation.evaluate_model --model [MODEL] --type [bigram|gru|transformer]`
+- additional optional arguments:
+  - `--num_samples`, default=100
+  - `--gen_length`, default=50
+  - `--seed`, default=42
+  - `--level [1|2]`, default=2
+
 
 ---
 
